@@ -3,8 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>매뉴얼 챗봇 — PHP 하나에서 도커 서비스까지, 단계별 구성과 성능</title>
-<meta name="description" content="매뉴얼 챗봇을 PHP 단순판 → 검색 → 도커 비동기 서비스로 키우는 3단계 구성, 성능 · 기능 · 언어별 비교 · 1 · 2단계 실측 결과(지연 · 토큰 · 정답 · 언어별 · 동시 사용자)">
+<title>매뉴얼 챗봇 두 가지 — 어떻게 만들고 어떻게 시험했나</title>
+<meta name="description" content="프로그램 매뉴얼 427쪽을 근거로 답하는 챗봇을 PHP 판과 도커 판 두 가지로 만들고, 난이도 10단계 × 6개 언어 66문항으로 시험한 결과">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f2ea">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14161b">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,378 +19,511 @@
   --c-accent:light-dark(#8a6424,#c8a15a);--c-line:light-dark(#dcd5c6,#2b2f3a);
   --font-display:"Hahmlet","Apple SD Gothic Neo",Georgia,serif;
   --font-body:"IBM Plex Sans KR","Apple SD Gothic Neo",-apple-system,system-ui,sans-serif;
-  --container:min(92vw,1100px);--r:10px;--ease:cubic-bezier(.22,1,.36,1);
+  --container:min(92vw,1180px);--r-s:6px;--r:10px;--ease:cubic-bezier(.22,1,.36,1);
+  --shadow:0 1px 2px light-dark(rgb(27 29 35 / .06),transparent),0 4px 16px light-dark(rgb(27 29 35 / .05),transparent);
 }
 *{box-sizing:border-box}
-@media (min-width:2400px){html{font-size:118.75%}}
-body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--font-body);font-weight:300;line-height:1.75;word-break:keep-all;-webkit-font-smoothing:antialiased}
+@media (min-width:1920px){html{font-size:112.5%}:root{--container:min(92vw,1560px)}}
+@media (min-width:2400px){html{font-size:125%}:root{--container:min(90vw,1900px)}}
+body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--font-body);font-weight:300;line-height:1.75;word-break:keep-all;overflow-wrap:break-word;-webkit-font-smoothing:antialiased}
 .wrap{width:var(--container);margin-inline:auto;padding-inline:clamp(1rem,.8rem + 1.5vw,2.5rem)}
 header{padding-block:clamp(2rem,1.5rem + 2vw,3.5rem) 1.5rem;border-bottom:1px solid var(--c-line)}
-h1,h3{font-family:var(--font-display);font-weight:600;letter-spacing:-.02em;margin:0}
-h1{font-size:clamp(1.7rem,1.3rem + 2vw,2.8rem);line-height:1.2}
+h1,h2,h3{font-family:var(--font-display);font-weight:600;letter-spacing:-.02em;margin:0}
+h1{font-size:clamp(1.7rem,1.3rem + 2vw,2.8rem);line-height:1.25;text-wrap:balance}
+h2{font-size:clamp(1.2rem,1.05rem + .6vw,1.6rem);margin:1.6rem 0 .6rem}
+h3{font-size:1.05rem;margin:1.4rem 0 .4rem}
 .lead{color:var(--c-muted);margin:.7rem 0 0;max-width:62ch}
 .meta{font-size:.85rem;color:var(--c-muted);margin-top:.6rem}
 a{color:var(--c-accent)}
+p,li{max-width:72ch}
+code{font-size:.9em}
 details.sec{border-bottom:1px solid var(--c-line)}
-details.sec>summary{cursor:pointer;list-style:none;padding-block:1.2rem;display:flex;gap:.8rem;align-items:center;font-family:var(--font-display);font-size:clamp(1.15rem,1rem + .6vw,1.5rem);font-weight:600}
+details.sec>summary{cursor:pointer;list-style:none;padding-block:1.1rem;display:flex;gap:.8rem;align-items:center;font-family:var(--font-display);font-size:clamp(1.1rem,1rem + .5vw,1.4rem);font-weight:600;touch-action:manipulation}
 details.sec>summary::-webkit-details-marker{display:none}
 details.sec>summary::before{content:"";width:.5rem;height:.5rem;border-right:1.5px solid var(--c-accent);border-bottom:1.5px solid var(--c-accent);transform:rotate(-45deg);transition:transform .2s var(--ease);flex:none}
 details.sec[open]>summary::before{transform:rotate(45deg)}
+details.sec>summary small{font-family:var(--font-body);font-weight:300;font-size:.85rem;color:var(--c-muted);margin-left:auto;text-align:right}
+@media (max-width:640px){details.sec>summary{flex-wrap:wrap;row-gap:.1rem}details.sec>summary small{flex-basis:100%;margin-left:1.3rem;text-align:left}}
 summary:focus-visible{outline:2px solid var(--c-accent);outline-offset:2px}
-.body{padding-bottom:2.2rem}
-.note{color:var(--c-muted);max-width:70ch}
+.body{padding-bottom:2rem}
+.note{color:var(--c-muted);font-size:.92rem}
 .tw{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:.92rem}
 th,td{border-bottom:1px solid var(--c-line);padding:.5rem .6rem;text-align:left;vertical-align:top}
 th{font-weight:600;color:var(--c-muted)}
-.opt{border:1px solid var(--c-line);border-radius:var(--r);background:var(--c-surface);padding:1rem 1.2rem;margin:0 0 1.1rem}
-.opt h3{font-size:1.12rem;margin-bottom:.3rem}
-.opt ul{margin:.3rem 0 0;padding-left:1.2rem}
-.tag{font-family:var(--font-body);font-weight:400;font-size:.75rem;border:1px solid var(--c-line);border-radius:999px;padding:.05rem .55rem;color:var(--c-muted);margin-left:.4rem;white-space:nowrap}
-.rec{color:var(--c-accent);border-color:var(--c-accent)}
+.num{font-variant-numeric:tabular-nums}
 footer{padding-block:2rem;color:var(--c-muted);font-size:.85rem}
 @media (prefers-reduced-motion:reduce){*{transition:none !important}}
-.flow{border-left:3px solid var(--c-accent);background:var(--c-surface);padding:.7rem 1rem;border-radius:0 var(--r) var(--r) 0;margin:0 0 1rem;font-size:.92rem;overflow-wrap:anywhere}
-h3.sub{font-size:1.05rem;margin:1.4rem 0 .4rem}
-.tabs{display:flex;gap:.4rem;margin:1.4rem 0 .4rem;border-bottom:1px solid var(--c-line)}
-.tabs button{font:inherit;font-weight:400;background:none;border:0;border-bottom:2px solid transparent;color:var(--c-muted);padding:.55rem .9rem;cursor:pointer;margin-bottom:-1px}
+
+/* 탭 */
+.tabs{display:flex;flex-wrap:wrap;gap:.2rem .4rem;margin:1.4rem 0 .4rem;border-bottom:1px solid var(--c-line)}
+.tabs button{font:inherit;font-weight:400;background:none;border:0;border-bottom:2px solid transparent;color:var(--c-muted);padding:.55rem .8rem;min-height:44px;cursor:pointer;margin-bottom:-1px;touch-action:manipulation}
 .tabs button[aria-selected="true"]{color:var(--c-text);border-bottom-color:var(--c-accent);font-weight:600}
 .tabs button:focus-visible{outline:2px solid var(--c-accent);outline-offset:2px}
 [role="tabpanel"][hidden]{display:none}
-.num{font-variant-numeric:tabular-nums;white-space:nowrap}
-.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));gap:.8rem;margin:0 0 1.2rem}
-.kpi div{border:1px solid var(--c-line);border-radius:var(--r);background:var(--c-surface);padding:.8rem 1rem}
-.kpi b{display:block;font-family:var(--font-display);font-size:1.5rem;font-weight:600;color:var(--c-accent)}
+
+/* 한눈에 */
+.concl{margin:1.4rem 0 1.2rem;padding-left:1.3rem}
+.concl li{margin-bottom:.45rem}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr));gap:.8rem;margin:0 0 1rem}
+.kpi div{border:1px solid var(--c-line);border-radius:var(--r);background:var(--c-surface);padding:.8rem 1rem;box-shadow:var(--shadow)}
+.kpi b{display:block;font-family:var(--font-display);font-size:1.45rem;font-weight:600;color:var(--c-accent);font-variant-numeric:tabular-nums}
 .kpi span{font-size:.85rem;color:var(--c-muted)}
+
+/* 흐름 그림 */
+.flowfig{margin:1rem 0 .6rem}
+.flow-svg{display:block;width:100%;height:auto;font-family:var(--font-body)}
+.flow-svg.v{display:none;max-width:420px}
+@media (max-width:899px){.flow-svg.h{display:none}.flow-svg.v{display:block}}
+.fb{fill:var(--c-surface);stroke:var(--c-line);stroke-width:1.5}
+.fb.ext{stroke:var(--c-accent);stroke-width:2}
+.fb.cli{stroke:var(--c-muted);stroke-dasharray:5 4}
+.ft{fill:var(--c-text);font-size:15px;font-weight:400}
+.fw{fill:var(--c-muted);font-size:12.5px}
+.fsep{stroke:var(--c-line)}
+.fa{stroke:var(--c-muted);stroke-width:1.5}
+.fah{fill:var(--c-muted)}
+.key{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.85rem;color:var(--c-muted);margin:.2rem 0 1rem;padding:0;list-style:none}
+.key i{display:inline-block;width:1.4rem;height:.8rem;border-radius:3px;border:1.5px solid var(--c-line);vertical-align:-1px;margin-right:.35rem;background:var(--c-surface)}
+.key i.ext{border:2px solid var(--c-accent)}
+.key i.cli{border:1.5px dashed var(--c-muted)}
+
+/* 낱말 칩 */
+.gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,19rem),1fr));gap:.5rem 1.2rem;margin:.6rem 0 1rem}
+.gloss div{display:flex;gap:.6rem;align-items:baseline}
+.gloss dt{flex:none;font-weight:400;font-size:.82rem;border:1px solid var(--c-accent);color:var(--c-accent);border-radius:999px;padding:.05rem .6rem;white-space:nowrap}
+.gloss dd{margin:0;font-size:.92rem}
+
+/* 막대 */
+.chart{margin:.8rem 0 1.2rem}
+.legend{display:flex;flex-wrap:wrap;gap:.3rem 1.1rem;font-size:.82rem;color:var(--c-muted);margin-bottom:.6rem}
+.sw{display:inline-block;width:.9rem;height:.6rem;border-radius:2px;margin-right:.35rem;vertical-align:0}
+.sw.php,.c.php{background:var(--c-muted)}
+.sw.dk,.c.dk{background:var(--c-accent)}
+.sw.pt{background:repeating-linear-gradient(45deg,var(--c-muted) 0 2px,transparent 2px 4px);border:1px solid var(--c-muted)}
+.crow{display:grid;grid-template-columns:11rem 1fr;gap:.2rem 1rem;padding:.45rem 0;border-bottom:1px solid var(--c-line)}
+.rl{font-size:.9rem}
+.bar{display:grid;grid-template-columns:2.6rem 1fr 7.2rem;align-items:center;gap:.6rem;font-size:.82rem;line-height:1.5}
+.who{color:var(--c-muted)}
+.track{display:flex;height:.7rem;background:color-mix(in srgb,var(--c-line) 55%,transparent);border-radius:2px;overflow:hidden}
+.track i{display:block;height:100%}
+.p.php{background:repeating-linear-gradient(45deg,var(--c-muted) 0 2px,transparent 2px 4px)}
+.p.dk{background:repeating-linear-gradient(45deg,var(--c-accent) 0 2px,transparent 2px 4px)}
+.v{font-weight:400}
+@media (max-width:640px){.crow{grid-template-columns:1fr}.bar{grid-template-columns:2.4rem 1fr 6.4rem}}
+.grid2{display:grid;gap:0 2.5rem}
+@media (min-width:1600px){.grid2{grid-template-columns:1fr 1fr}}
+
+/* 실패 · 진행 중 */
+.fail{padding-left:1.3rem}
+.fail li{margin-bottom:.7rem}
+.pending{border:1px dashed var(--c-accent);border-radius:var(--r);padding:.9rem 1.1rem;margin:1rem 0;background:var(--c-surface)}
+.pending b{color:var(--c-accent)}
+
+/* 화면 그림 */
+.mock{display:block;width:100%;max-width:560px;height:auto;margin:.6rem 0 1rem;font-family:var(--font-body)}
+.mk-frame{fill:var(--c-surface);stroke:var(--c-line);stroke-width:1.5}
+.mk-line{stroke:var(--c-line)}
+.mk-fill{fill:color-mix(in srgb,var(--c-line) 45%,var(--c-surface))}
+.mk-me{fill:color-mix(in srgb,var(--c-accent) 18%,var(--c-surface))}
+.mk-txt{fill:var(--c-text);font-size:13px}
+.mk-mut{fill:var(--c-muted);font-size:11.5px}
+.mk-acc{fill:var(--c-accent)}
+.mk-chip{fill:none;stroke:var(--c-accent)}
+.mk-in{fill:none;stroke:var(--c-accent);stroke-width:1.5}
+.mk-bar{fill:var(--c-muted);opacity:.35}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>매뉴얼 챗봇 — PHP 하나에서 도커 서비스까지, 단계별 구성과 성능</h1>
-    <p class="lead">제품을 고르고 질문하면 우리 매뉴얼 · 영상 자막 · 예상 질문을 근거로 답하는 챗봇(공개된 제품 상담 챗봇 화면을 참고한 예시)을, 가장 단순한 PHP 판에서 시작해 이미지까지 다루는 도커 서비스로 키우는 순서. 두 AI(Claude · Codex)에게 따로 물어 비교했다.</p>
+    <h1>매뉴얼 챗봇 두 가지 — 어떻게 만들고 어떻게 시험했나</h1>
+    <p class="lead">CAD 프로그램과 재단 배치 프로그램의 공개 매뉴얼 427쪽을 근거로 답하는 챗봇을, 같은 화면 · 같은 Claude 모델로 <b>PHP 판</b>과 <b>도커 판</b> 두 가지로 만들었다. 그리고 난이도 10단계 × 6개 언어 질문으로 둘을 나란히 시험했다.</p>
     <p class="meta">2026-11-05 · 학습 노트 · <a href="../edu-video-chatbot/">앞 글: 구성안 비교</a></p>
   </header>
 
-  <div class="tabs" role="tablist">
-    <button role="tab" id="t-plan" aria-controls="p-plan" aria-selected="true">구성 · 비교</button>
-    <button role="tab" id="t-result" aria-controls="p-result" aria-selected="false">실측 결과</button>
+  <div class="tabs" role="tablist" aria-label="이 글의 부분">
+    <button role="tab" id="t-glance" aria-controls="p-glance" aria-selected="true">한눈에</button>
+    <button role="tab" id="t-how" aria-controls="p-how" aria-selected="false">어떻게 만들었나</button>
+    <button role="tab" id="t-result" aria-controls="p-result" aria-selected="false">시험 결과</button>
+    <button role="tab" id="t-next" aria-controls="p-next" aria-selected="false">배운 것 · 다음</button>
   </div>
 
-  <div role="tabpanel" id="p-plan" aria-labelledby="t-plan">
-
-  <details class="sec" open>
-    <summary>1. 본보기 — 공개된 제품 상담 챗봇 화면</summary>
-    <div class="body">
-      <ul>
-        <li>화면: 첫 화면에서 <b>제품 고르기</b> → 채팅, 위에 언어 설정. 어떤 LLM 을 쓰는지 화면 아래에 밝힌다.</li>
-        <li>앞단: React 한 장짜리 앱(SPA), 문구는 언어별 <code>translation.json</code>.</li>
-        <li>뒷단: 답을 글자 단위로 흘려 보내는 스트리밍 방식이다. 이런 화면은 LangChain 의 이벤트 스트리밍(<code>astream_events</code>)으로도, 직접 짠 SSE 로도 만들 수 있다.</li>
-        <li>교훈: 사용자가 「빠르다」 고 느끼는 건 전체 시간보다 <b>첫 글자가 뜨는 시간</b>이다 — 스트리밍이 사실상 필수.</li>
-      </ul>
-    </div>
-  </details>
-
-  <details class="sec" open>
-    <summary>2. 1단계 — PHP 하나로 가장 단순하게</summary>
-    <div class="body">
-      <div class="flow">브라우저 질문 칸 → PHP 컨트롤러 → [매뉴얼 글 + 자막 + 예상 질문 전부를 system 프롬프트에, 캐시] → LLM API → 글자 흘려 보내기(SSE) → 화면</div>
-      <ul>
-        <li>새로 만드는 것: 서비스 클래스 1개 · 주소 1개 · 채팅 화면 1장. 검색 · 벡터 DB · 새 컨테이너 없음.</li>
-        <li>자료: 노션 Markdown 내보내기 + 그림 속 조작법을 글로 + 예상 질문 표. 쪽마다 「제품 · 메뉴 · 언어 · 원본 링크 · 그림 주소」 머리말을 붙여 둔다(2 · 3단계에서 그대로 씀).</li>
-        <li>이미지: 답 끝에 근거 쪽의 <b>그림 주소를 그대로 붙여</b> 보여 준다(모델이 그림을 보는 건 아님).</li>
-        <li>다국어: 자료는 한국어 하나, 「질문한 언어로 답하라」 지시. 제품 고르기 · 언어 설정은 화면에서.</li>
-        <li>한계: 자료가 프롬프트에 다 들어갈 때까지만. 스트리밍 동안 PHP-FPM 일꾼 하나를 계속 붙잡는다.</li>
-      </ul>
-    </div>
-  </details>
-
-  <details class="sec" open>
-    <summary>3. 2단계 — PHP + 검색으로 필요한 쪽만</summary>
-    <div class="body">
-      <div class="flow">질문 → 이미 쓰는 검색 엔진(Meilisearch 등, 제품 · 언어로 거르기) 상위 5~8쪽 → 그 쪽만 프롬프트에 → LLM → SSE → 답 + 근거 링크 + 그림</div>
-      <ul>
-        <li>자료가 커져도(매뉴얼 전 버전 · 모든 자막) 프롬프트가 작아져 <b>질문당 비용 · 첫 글자 시간이 준다.</b></li>
-        <li>매뉴얼 그림은 <b>미리 한 번</b> 비전 모델로 「이 그림은 무엇을 하는 화면인지」 설명을 뽑아 검색 색인에 넣는다 → 그림 내용으로도 찾힌다.</li>
-        <li>사용자 스크린샷 질문: 이미지를 LLM API 에 같이 보내면 PHP 로도 된다(비전 지원 모델). 다만 업로드 크기 · 시간이 FPM 을 더 붙잡는다.</li>
-        <li>예상 질문 표는 정답지로 쓴다 — 자동 채점으로 「찾기 실패 / 답 틀림」 을 갈라 본다.</li>
-        <li>질문 · 답 · 찾은 쪽을 로그로 남겨, 못 찾은 질문을 매주 자료에 보탠다.</li>
-      </ul>
-    </div>
-  </details>
-
-  <details class="sec" open>
-    <summary>4. 3단계 — 도커 서비스로, 빠르고 이미지까지</summary>
-    <div class="body">
-      <div class="flow">브라우저 ⇄ 웹앱(로그인 · 권한 · 로그만, 토큰 발급) ⇄ <b>챗봇 서비스 컨테이너</b>(Python FastAPI 비동기 또는 Node) ⇄ 벡터 DB 컨테이너(Qdrant 등) + LLM API<br>+ 적재 일꾼 컨테이너(노션 · 자막 · 그림을 잘라 임베딩)</div>
-      <ul>
-        <li><b>섞어 찾기</b>: 낱말 검색(BM25) + 의미 검색(다국어 임베딩) + 재정렬 → 「다른 말로 물어도」 찾는다. 다국어 임베딩을 쓰면 외국어 질문을 한국어 자료에 맞출 수 있다 — 언어별 품질은 실측이 필요하다.</li>
-        <li><b>이미지</b>: 그림마다 ① 비전 모델 설명 글 ② 이미지 임베딩을 같이 저장. 사용자 스크린샷 → 이미지 임베딩으로 「어느 메뉴 화면인지」 먼저 찾고, 그 쪽 글 + 그림으로 답.</li>
-        <li><b>속도</b>: 비동기 서버라 스트리밍 수백 개를 일꾼 몇 개로 버틴다. 같은 질문은 Redis 답 캐시.</li>
-        <li>LangChain 은 <b>선택</b>이다. LangChain 이벤트 스트리밍을 쓰면 빨리 붙고, 직접 짜면 덜 무겁다.</li>
-        <li>운영: 컨테이너 2~3개 · 벡터 DB 백업 · 배포 매니페스트가 늘어난다.</li>
-      </ul>
-    </div>
-  </details>
-
-  <details class="sec" open>
-    <summary>5. 단계별 성능 비교</summary>
-    <div class="body">
-      <p class="note">아래 표는 재기 전에 쓴 상대 비교다(기간은 어림). <b>1 · 2단계를 실제로 잰 숫자는 「실측 결과」 탭</b>에 있다. 3단계는 아직 재지 않았다.</p>
-      <div class="tw"><table>
-        <tr><th></th><th>1단계 PHP 통째</th><th>2단계 PHP + 검색</th><th>3단계 도커 서비스</th></tr>
-        <tr><td>첫 글자 시간</td><td>스트리밍 가능 — 큰 프롬프트는 캐시 적중 시 줄어듦</td><td>스트리밍 가능 — 프롬프트 작음, 검색 시간 추가</td><td>스트리밍 가능 — 답 캐시 적중 시 빠름. 모델 응답 자체가 빨라지진 않음</td></tr>
-        <tr><td>전체 응답 시간</td><td colspan="3">셋 다 거의 LLM 이 정한다 — 답 길이 · 모델 크기가 좌우</td></tr>
-        <tr><td>동시 사용자</td><td>낮음 — 스트리밍 1개 = FPM 일꾼 1개 점유</td><td>낮음 — 같은 제약</td><td>FPM 점유가 없어 늘리기 쉬움 — 규모는 측정 필요</td></tr>
-        <tr><td>질문당 비용</td><td>높음 — 매번 자료 전체(캐시 적중 시 깎임)</td><td>낮음</td><td>낮음 + 캐시</td></tr>
-        <tr><td>답 정확도</td><td>자료가 작을 땐 좋음, 커지면 흐려짐</td><td>찾기에 달림 — 낱말이 다르면 놓침</td><td>찾는 길이 가장 많음(의미 · 다국어 · 그림) — 정답률은 측정 필요</td></tr>
-        <tr><td>이미지</td><td>근거 그림 주소 첨부만</td><td>그림 설명 색인 · 스크린샷 질문 가능</td><td>그림으로 찾기 · 스크린샷 → 메뉴 판별</td></tr>
-        <tr><td>만드는 기간(어림)</td><td>1~2일</td><td>3~5일</td><td>1~2주</td></tr>
-        <tr><td>운영 부담</td><td>없음</td><td>색인 하나 추가</td><td>컨테이너 2~3개 · 벡터 DB 백업</td></tr>
-      </table></div>
-      <h3 class="sub">재는 법</h3>
-      <ol>
-        <li>예상 질문 50개 + 자료 밖 질문 10개를 고정 시험지로 둔다</li>
-        <li>단계마다 같은 시험지로 첫 글자 시간 · 전체 시간 · 토큰 수(=비용) · 정답 수를 표로 남긴다</li>
-        <li>동시 사용자는 부하 도구(k6 등)로 스트리밍 20 · 50 · 100개를 동시에 열고 실패율 · 첫 글자 시간을 본다</li>
-        <li>다음 단계로 넘어가는 기준: 정답률이 목표 아래거나, 동시 사용자에서 FPM 이 먼저 바닥나면</li>
-      </ol>
-    </div>
-  </details>
-
-  <details class="sec" open>
-    <summary>6. 단계별로 어디까지 되나</summary>
-    <div class="body">
-      <div class="tw"><table>
-        <tr><th>할 수 있는 것</th><th>1단계</th><th>2단계</th><th>3단계</th></tr>
-        <tr><td>제품 고르기 · 언어 설정 화면 </td><td>된다</td><td>된다</td><td>된다</td></tr>
-        <tr><td>글자 흘려 보내기(스트리밍)</td><td>된다</td><td>된다</td><td>된다</td></tr>
-        <tr><td>답에 근거 쪽 링크 · 영상 몇 분 링크</td><td>된다</td><td>된다</td><td>된다</td></tr>
-        <tr><td>자료 밖 질문에 「모른다 · 상담 안내」</td><td>된다</td><td>된다</td><td>된다</td></tr>
-        <tr><td>자료 분량</td><td>프롬프트에 다 들어가는 만큼 (메뉴 몇 개 ~ 매뉴얼 한 권, 재 봐야 앎)</td><td>제한 거의 없음</td><td>제한 거의 없음</td></tr>
-        <tr><td>답에 매뉴얼 그림 보여 주기</td><td>근거 쪽 그림 주소 첨부</td><td>그림 설명으로 찾아 첨부</td><td>그림 자체로 찾아 첨부</td></tr>
-        <tr><td>사용자가 스크린샷 올려 묻기</td><td>안 함</td><td>된다 (LLM 이 그림을 봄, 느림)</td><td>된다 (어느 메뉴 화면인지 먼저 판별)</td></tr>
-        <tr><td>다른 말로 물어도 찾기 (「선 긋기」 ↔ 「선 그리기」)</td><td>된다 (자료를 다 넣으니까)</td><td>약함 — 낱말이 달라 놓칠 수 있음</td><td>된다 (의미 검색)</td></tr>
-        <tr><td>이어지는 대화 (앞 질문 기억)</td><td>된다</td><td>된다</td><td>된다</td></tr>
-        <tr><td>회원 · 구매자만 쓰게</td><td>된다 (웹앱 로그인)</td><td>된다</td><td>된다 (웹앱이 토큰 발급)</td></tr>
-        <tr><td>동시 사용자 많을 때</td><td>FPM 일꾼 수까지</td><td>FPM 일꾼 수까지</td><td>FPM 과 분리 — 규모는 측정 필요</td></tr>
-      </table></div>
-    </div>
-  </details>
-
-  <details class="sec" open>
-    <summary>7. 언어별로 — 한국어 자료 하나로 6개 언어 질문</summary>
-    <div class="body">
-      <p class="note">자료는 한국어 하나만 두고 질문 언어로 답하게 하는 경우. 「확인 필요」 는 시험지로 재야 아는 칸이다.</p>
-      <div class="tw"><table>
-        <tr><th>질문 언어</th><th>1단계 (통째)</th><th>2단계 (낱말 검색)</th><th>3단계 (의미 검색)</th><th>주의</th></tr>
-        <tr><td>한국어</td><td>좋음</td><td>좋음</td><td>좋음</td><td>—</td></tr>
-        <tr><td>영어</td><td>좋음</td><td>그대로는 못 찾음 → <b>질문을 한국어로 바꿔 검색</b>하면 됨</td><td>좋음</td><td>메뉴 영문 이름(Draw · Arc)을 자료에 같이 적어 두면 2단계도 바로 찾힘</td></tr>
-        <tr><td>일본어</td><td>좋음</td><td>질문 번역 후 검색</td><td>좋음</td><td>—</td></tr>
-        <tr><td>중국어(간체)</td><td>좋음</td><td>질문 번역 후 검색</td><td>좋음</td><td>—</td></tr>
-        <tr><td>베트남어</td><td>좋음</td><td>질문 번역 후 검색</td><td>좋음 (확인 필요)</td><td>—</td></tr>
-        <tr><td>크메르어</td><td>쓸 만함 (확인 필요)</td><td>질문 번역 품질에 달림 (확인 필요)</td><td>임베딩 모델마다 차이 큼 (확인 필요)</td><td>LLM 답 품질 · 띄어쓰기 없는 글자 처리를 꼭 따로 시험</td></tr>
-      </table></div>
-      <ul>
-        <li>답 언어: 셋 다 「질문한 언어로 답하라」 한 줄이면 된다. 메뉴 이름은 화면에 보이는 그대로(언어팩) 쓰게 용어 표를 같이 넣는다.</li>
-        <li>화면 문구(버튼 · 안내)는 언어별 번역 파일로 — 답과 따로 관리.</li>
-        <li>시험지도 언어별로: 같은 질문 50개를 6개 언어로 돌려 정답 수를 언어마다 본다.</li>
-      </ul>
-    </div>
-  </details>
-
-  <details class="sec" open>
-    <summary>8. PHP-FPM 스트리밍의 병목</summary>
-    <div class="body">
-      <ul>
-        <li>FPM 은 요청 하나가 끝날 때까지 일꾼 하나를 잡는다. LLM 답은 수 초~수십 초라, 일반 화면 요청과 <b>일꾼 풀을 나눠 먹는다.</b></li>
-        <li>대처: 챗봇 전용 FPM 풀(다른 소켓) · nginx 에서 FPM 직결 경로는 <code>fastcgi_buffering off</code>(또는 응답 헤더 <code>X-Accel-Buffering: no</code>) · 질문당 시간 제한 · 사용자별 횟수 제한.</li>
-        <li>그래도 모자라면 그 지점이 3단계(비동기 서비스)로 옮길 신호다.</li>
-      </ul>
-    </div>
-  </details>
-
-  <details class="sec" open>
-    <summary>9. Codex 의견</summary>
-    <div class="body">
-      <p class="note">같은 물음을 Claude 결론 없이 Codex 에 따로 물었다. 수치는 Codex 도 「측정 필요」 로 남겼다.</p>
-<div class="opt"><h3>Claude 와 다른 점</h3><ul>
-<li><b>1단계</b>: 자료를 통째로 넣지 않고 DB 에서 질문에 맞는 자료를 찾아 넣는다. 처음엔 스트리밍 없이 완성된 답을 한 번에 돌려준다. 스크린샷 질문은 범위 밖.</li>
-<li><b>2단계</b>: 기존 Meilisearch 로 찾고 SSE 로 흘려 보낸다. 다른 표현을 놓치면 <b>Meilisearch 하이브리드(의미) 검색</b>을 더하면 되고, 별도 벡터 DB 는 아직 필요 없다고 봤다.</li>
-<li><b>3단계</b>: 스크린샷은 크기 · 형식 검사 뒤 질문 + 찾은 매뉴얼 그림과 함께 비전 모델에 보낸다. 별도 서비스는 FPM 점유를 줄이지만 <b>모델 응답 자체가 빨라진다는 보장은 없다.</b></li>
-<li><b>재는 법</b>: 첫 글자 · 완료 시간의 p50/p95, 동시 접속별 실패율, 실제 API 사용량 · 요금, 출처가 맞는 답의 비율.</li>
-<li><b>FPM 병목</b>: Nginx FastCGI 버퍼링이 켜져 있으면 글자가 모여서 뜬다 → 채팅 경로만 끄고, FPM 대기열 · <code>max children reached</code> 를 재다가 포화되면 3단계로.</li>
-<li><b>화면</b>: 제품 선택 · 언어 설정 · 채팅은 1단계부터, 글자 흐름은 2단계, 스크린샷 업로드는 3단계.</li>
-</ul></div>
-<p class="note">참고 문서: <a href="https://www.meilisearch.com/products/hybrid-search">Meilisearch 하이브리드 검색</a> · <a href="https://platform.claude.com/docs/en/build-with-claude/streaming">Claude 스트리밍</a> · <a href="https://platform.claude.com/docs/en/build-with-claude/vision">Claude 이미지 입력</a> · <a href="https://nginx.org/en/docs/http/ngx_http_fastcgi_module.html">Nginx FastCGI 버퍼링</a></p>
-    </div>
-  </details>
-
-  <details class="sec" open>
-    <summary>10. 결론</summary>
-    <div class="body">
-      <ol>
-        <li><b>1단계로 데모</b> — 메뉴 하나 · 예상 질문 50개 · 제품 고르기 + 언어 설정 화면은 1단계에서도 된다.</li>
-        <li>시험지로 재고, 자료가 커지거나 정답률이 막히면 <b>2단계</b>.</li>
-        <li>스크린샷 질문 · 동시 사용자가 필요해지면 <b>3단계 도커 서비스</b> — 이때 LangChain 은 써도 되고 안 써도 된다.</li>
-        <li>어느 단계든 자료 머리말(제품 · 메뉴 · 언어 · 링크 · 그림)과 시험지는 그대로 넘어간다.</li>
-      </ol>
-      <p><b>둘이 같은 결론</b>: 1단계로 답 품질부터 보고 → 찾기가 어려워지면 2단계 → 스크린샷 · 동시 접속이 필요하면 3단계. 근거 없으면 「모른다」, 답마다 출처.<br><b>갈리는 곳</b>: 1단계에서 자료를 통째로 넣을지(Claude) DB 에서 찾아 넣을지(Codex), 2단계 의미 검색을 Meilisearch 하이브리드로 할지(Codex) 3단계 벡터 DB 로 미룰지(Claude).</p>
-    </div>
-  </details>
-
-  </div>
-
-  <div role="tabpanel" id="p-result" aria-labelledby="t-result" hidden>
-    <p class="note" style="margin-top:1.2rem">2026-11-05 측정. CAD 프로그램 「그리기」 메뉴 매뉴얼 13쪽(한국어)을 자료로, Claude API(Sonnet 5.5 · Haiku 5.5)를 스트리밍으로 직접 불렀다. 1 · 2단계만 쟀고 3단계(도커 서비스)는 아직 재지 않았다.</p>
+  <!-- ========== 한눈에 ========== -->
+  <div role="tabpanel" id="p-glance" aria-labelledby="t-glance">
+    <ol class="concl">
+      <li>매뉴얼을 글 조각으로 잘라 두고, 질문이 오면 <b>관련 조각 5개를 찾아 Claude 에게 건네 답하게</b> 했다. 두 판은 「찾는 방법」만 다르다.</li>
+      <li><b>도커 판이 더 잘 찾고 더 잘 맞혔다</b> — 정답 쪽 찾기 45/60 (PHP 판 32/60), 정답 36/66 (PHP 판 20/66).</li>
+      <li>첫 글자가 뜨는 시간도 도커 판이 빨랐다 — 중앙값 1.6초 (PHP 판 2.7초).</li>
+      <li>자료에 없는 질문 6개는 두 판 모두 6/6 「매뉴얼에 없다 · 고객센터 안내」로 답했다. 반면 증상으로 묻기(6단계) · 여러 쪽 잇기(9단계) · 최근 업데이트(10단계)는 <b>두 판 모두 정답이 0~1개</b>였다.</li>
+      <li>틀린 이유는 대부분 Claude 가 아니라 <b>자료 자르기 · 검색어 처리</b>였다. 원인 5개를 고쳐 다시 재는 중이다.</li>
+    </ol>
     <div class="kpi">
-      <div><b class="num">307회 / 실패 0</b><span>실제 API 호출 (동시 5)</span></div>
-      <div><b class="num">0.84 ~ 1.66초</b><span>첫 글자 중간값 (모델 · 단계별)</span></div>
-      <div><b class="num">1.6 ~ 3.0초</b><span>답 완료 중간값</span></div>
-      <div><b class="num">10 / 10</b><span>자료 밖 질문에 「모른다 · 안내」로 답함 (모든 조합)</span></div>
+      <div><b>427쪽</b><span>모은 매뉴얼 (글 조각 712개)</span></div>
+      <div><b>32 → 45 / 60</b><span>정답 쪽 찾기 · PHP 판 → 도커 판</span></div>
+      <div><b>20 → 36 / 66</b><span>정답 · PHP 판 → 도커 판</span></div>
+      <div><b>2.7 → 1.6초</b><span>첫 글자 중앙값 · PHP 판 → 도커 판</span></div>
     </div>
+    <p class="note">정답 수에는 자료 밖 질문을 바르게 거절한 6개가 두 판 모두 들어 있다. 채점은 Claude Sonnet 이 자동으로 했고, 사람이 8건을 직접 읽어 8건 모두 같은 판정이었다.</p>
+
+    <h2>전체 흐름</h2>
+    <figure class="flowfig"><svg class="flow-svg h" viewBox="0 0 1040 132" role="img" aria-label="전체 흐름: 매뉴얼 427쪽을 712개 조각으로 자르고, 질문마다 관련 5조각을 찾아 Claude 가 답을 쓰고 출처와 함께 보여 준다"><rect class="fb " x="1" y="2" width="148" height="128" rx="8"/><text class="ft" x="75.0" y="33" text-anchor="middle">매뉴얼</text><text class="ft" x="75.0" y="52" text-anchor="middle">427쪽</text><line class="fsep" x1="14" x2="136" y1="96" y2="96"/><text class="fw" x="75.0" y="117" text-anchor="middle">미리 한 번</text><line class="fa" x1="153" y1="66.0" x2="172" y2="66.0"/><path class="fah" d="M172,61.0 L178,66.0 L172,71.0Z"/><rect class="fb " x="179" y="2" width="148" height="128" rx="8"/><text class="ft" x="253.0" y="33" text-anchor="middle">글 조각</text><text class="ft" x="253.0" y="52" text-anchor="middle">712개로 자르기</text><line class="fsep" x1="192" x2="314" y1="96" y2="96"/><text class="fw" x="253.0" y="117" text-anchor="middle">미리 한 번</text><line class="fa" x1="331" y1="66.0" x2="350" y2="66.0"/><path class="fah" d="M350,61.0 L356,66.0 L350,71.0Z"/><rect class="fb cli" x="357" y="2" width="148" height="128" rx="8"/><text class="ft" x="431.0" y="42" text-anchor="middle">질문</text><line class="fsep" x1="370" x2="492" y1="96" y2="96"/><text class="fw" x="431.0" y="117" text-anchor="middle">사용자</text><line class="fa" x1="509" y1="66.0" x2="528" y2="66.0"/><path class="fah" d="M528,61.0 L534,66.0 L528,71.0Z"/><rect class="fb " x="535" y="2" width="148" height="128" rx="8"/><text class="ft" x="609.0" y="33" text-anchor="middle">관련 조각</text><text class="ft" x="609.0" y="52" text-anchor="middle">5개 찾기</text><line class="fsep" x1="548" x2="670" y1="96" y2="96"/><text class="fw" x="609.0" y="117" text-anchor="middle">질문마다</text><line class="fa" x1="687" y1="66.0" x2="706" y2="66.0"/><path class="fah" d="M706,61.0 L712,66.0 L706,71.0Z"/><rect class="fb ext" x="713" y="2" width="148" height="128" rx="8"/><text class="ft" x="787.0" y="33" text-anchor="middle">Claude 가</text><text class="ft" x="787.0" y="52" text-anchor="middle">답 쓰기</text><line class="fsep" x1="726" x2="848" y1="96" y2="96"/><text class="fw" x="787.0" y="117" text-anchor="middle">질문마다</text><line class="fa" x1="865" y1="66.0" x2="884" y2="66.0"/><path class="fah" d="M884,61.0 L890,66.0 L884,71.0Z"/><rect class="fb cli" x="891" y="2" width="148" height="128" rx="8"/><text class="ft" x="965.0" y="33" text-anchor="middle">출처와 함께</text><text class="ft" x="965.0" y="52" text-anchor="middle">보여 주기</text><line class="fsep" x1="904" x2="1026" y1="96" y2="96"/><text class="fw" x="965.0" y="117" text-anchor="middle">화면</text></svg><svg class="flow-svg v" viewBox="0 0 324 544" role="img" aria-label="전체 흐름: 매뉴얼 427쪽을 712개 조각으로 자르고, 질문마다 관련 5조각을 찾아 Claude 가 답을 쓰고 출처와 함께 보여 준다"><rect class="fb " x="2" y="2" width="320" height="70" rx="8"/><text class="ft" x="18" y="31">매뉴얼 427쪽</text><text class="fw" x="18" y="55">미리 한 번</text><line class="fa" x1="162.0" y1="74" x2="162.0" y2="89"/><path class="fah" d="M157.0,89 L162.0,95 L167.0,89Z"/><rect class="fb " x="2" y="96" width="320" height="70" rx="8"/><text class="ft" x="18" y="125">글 조각 712개로 자르기</text><text class="fw" x="18" y="149">미리 한 번</text><line class="fa" x1="162.0" y1="168" x2="162.0" y2="183"/><path class="fah" d="M157.0,183 L162.0,189 L167.0,183Z"/><rect class="fb cli" x="2" y="190" width="320" height="70" rx="8"/><text class="ft" x="18" y="219">질문</text><text class="fw" x="18" y="243">사용자</text><line class="fa" x1="162.0" y1="262" x2="162.0" y2="277"/><path class="fah" d="M157.0,277 L162.0,283 L167.0,277Z"/><rect class="fb " x="2" y="284" width="320" height="70" rx="8"/><text class="ft" x="18" y="313">관련 조각 5개 찾기</text><text class="fw" x="18" y="337">질문마다</text><line class="fa" x1="162.0" y1="356" x2="162.0" y2="371"/><path class="fah" d="M157.0,371 L162.0,377 L167.0,371Z"/><rect class="fb ext" x="2" y="378" width="320" height="70" rx="8"/><text class="ft" x="18" y="407">Claude 가 답 쓰기</text><text class="fw" x="18" y="431">질문마다</text><line class="fa" x1="162.0" y1="450" x2="162.0" y2="465"/><path class="fah" d="M157.0,465 L162.0,471 L167.0,465Z"/><rect class="fb cli" x="2" y="472" width="320" height="70" rx="8"/><text class="ft" x="18" y="501">출처와 함께 보여 주기</text><text class="fw" x="18" y="525">화면</text></svg></figure>
+    <ul class="key">
+      <li><i class="cli"></i>사용자 · 화면</li>
+      <li><i></i>내 서버 안</li>
+      <li><i class="ext"></i>바깥 Claude API 호출</li>
+    </ul>
+    <p class="note">앞의 두 칸(자르기)은 자료가 바뀔 때 한 번만 한다. 뒤의 네 칸이 질문마다 돈다. 자세한 것은 「어떻게 만들었나」 탭에.</p>
+  </div>
+
+  <!-- ========== 어떻게 만들었나 ========== -->
+  <div role="tabpanel" id="p-how" aria-labelledby="t-how" hidden>
 
   <details class="sec">
-    <summary>R1. 한눈에 — 무엇을 알았나</summary>
+    <summary>먼저 낱말 10개 <small>한 줄씩</small></summary>
+    <div class="body">
+      <dl class="gloss">
+        <div><dt>RAG</dt><dd>질문과 관련된 자료를 먼저 찾아 AI 에게 같이 건네고, 그 자료로만 답하게 하는 방식.</dd></div>
+        <div><dt>청크</dt><dd>매뉴얼을 제목 기준으로 500~800자씩 자른 글 조각. 검색은 쪽이 아니라 조각 단위로 한다.</dd></div>
+        <div><dt>임베딩</dt><dd>글을 「뜻」을 담은 숫자 목록(벡터)으로 바꾸는 것. 뜻이 비슷하면 숫자도 가깝다.</dd></div>
+        <div><dt>하이브리드 검색</dt><dd>뜻으로 찾기(임베딩)와 낱말로 찾기(키워드)를 같이 돌려 결과를 섞는 검색.</dd></div>
+        <div><dt>RRF</dt><dd>두 검색 결과의 「순위」만 보고 점수를 매겨 하나로 합치는 간단한 섞기 공식.</dd></div>
+        <div><dt>SSE</dt><dd>서버가 답을 다 만들기 전에 글자를 조금씩 흘려 보내는 방식. 채팅 글자가 타자 치듯 뜬다.</dd></div>
+        <div><dt>프롬프트 캐시</dt><dd>매번 똑같이 보내는 앞부분(지시문)을 Claude 쪽에 잠시 저장해 두고 싸고 빠르게 다시 읽는 기능.</dd></div>
+        <div><dt>검색 적중</dt><dd>미리 정해 둔 정답 쪽이 찾은 상위 5조각 안에 들어 있었나.</dd></div>
+        <div><dt>첫 글자 시간</dt><dd>질문을 보낸 뒤 화면에 첫 글자가 뜨기까지. 사용자가 느끼는 「빠르다」는 대부분 이것이다.</dd></div>
+        <div><dt>부분 정답</dt><dd>요점 일부만 맞힌 답. 이 글의 「정답」 숫자에는 넣지 않았다.</dd></div>
+      </dl>
+    </div>
+  </details>
+
+  <details class="sec">
+    <summary>매뉴얼 모으기 <small>17곳 · 427쪽</small></summary>
+    <div class="body">
+      <p>공개된 매뉴얼 주소 17곳(공개 문서 사이트 두 곳 + 안내 영상 1개)의 첫 쪽과 하위 쪽을 전부 모았다. 브라우저 자동화(Playwright)로 쪽을 열고, 접힌 칸은 모두 펼쳐서 읽었다.</p>
+      <div class="tw"><table>
+        <tr><th>자료</th><th>쪽</th></tr>
+        <tr><td>CAD 프로그램 매뉴얼 (한국어)</td><td class="num">171</td></tr>
+        <tr><td>재단 배치 프로그램 매뉴얼 (한국어)</td><td class="num">47</td></tr>
+        <tr><td>영어 매뉴얼 (CAD 158 + 재단 배치 37)</td><td class="num">195</td></tr>
+        <tr><td>업데이트 기록 (두 프로그램 × 한 · 영) — 각각 아주 긴 한 쪽</td><td class="num">4</td></tr>
+        <tr><td>다른 CAD 3종 파일(DXF) 가져오기 안내 (한 · 영)</td><td class="num">6</td></tr>
+        <tr><td>출력(플롯) 안내 (한 · 영)</td><td class="num">2</td></tr>
+        <tr><td>사진으로 종이 패턴 불러오기 안내 + 안내 영상 자막</td><td class="num">2</td></tr>
+        <tr><th>합계</th><th class="num">427</th></tr>
+      </table></div>
+      <ul>
+        <li>글자 195,243자 · 그림 1,512장 · 약 97,600 토큰(글자 수 ÷ 2 로 어림).</li>
+        <li>쪽마다 머리말에 제품 · 언어 · 상위 메뉴 · 원본 주소 · 그림 목록을 붙여 저장했다. 답에 출처와 그림을 붙일 때 이 머리말을 쓴다.</li>
+        <li>제목 기준으로 잘라 <b>글 조각 712개</b>. 도커 판은 조각 앞에 「제품 &gt; 메뉴 &gt; 쪽 제목」을 붙여 어디 글인지도 검색에 걸리게 했다. 그림만 있고 글이 30자도 안 되는 조각 60개는 검색 순위에서 뒤로 밀었다.</li>
+        <li>한계: 그림 속 글자는 읽지 않았다. 글이 거의 없는 쪽이 42개다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec">
+    <summary>화면 <small>두 판이 같은 화면을 쓴다</small></summary>
+    <div class="body">
+      <svg class="mock" viewBox="0 0 560 330" role="img" aria-label="채팅 화면 그림: 위에 제품 · 언어 고르기, 가운데 질문과 답, 답 아래 출처 칩과 그림, 아래 질문 칸과 사진 단추">
+        <rect class="mk-frame" x="1" y="1" width="558" height="328" rx="10"/>
+        <text class="mk-txt" x="20" y="30" style="font-weight:600">매뉴얼 도움말 챗봇</text>
+        <line class="mk-line" x1="1" x2="559" y1="44" y2="44"/>
+        <text class="mk-mut" x="20" y="68">제품</text><rect class="mk-fill" x="50" y="54" width="90" height="22" rx="4"/><text class="mk-mut" x="58" y="69">전체</text>
+        <text class="mk-mut" x="156" y="68">언어</text><rect class="mk-fill" x="186" y="54" width="90" height="22" rx="4"/><text class="mk-mut" x="194" y="69">한국어</text>
+        <line class="mk-line" x1="1" x2="559" y1="88" y2="88"/>
+        <rect class="mk-me" x="330" y="102" width="210" height="30" rx="10"/><text class="mk-txt" x="344" y="122">곡선자 좌우 뒤집기랑 끝내는 법</text>
+        <rect class="mk-fill" x="20" y="146" width="400" height="120" rx="10"/>
+        <text class="mk-txt" x="34" y="170">곡선자는 「반전」으로 좌우를 뒤집고,</text>
+        <text class="mk-txt" x="34" y="190">Esc 로 끝냅니다.</text>
+        <rect class="mk-chip" x="34" y="202" width="68" height="20" rx="10"/><text class="mk-acc" x="46" y="216" style="font-size:11.5px">1 곡선자</text>
+        <rect class="mk-bar" x="34" y="230" width="56" height="28" rx="4"/><text class="mk-mut" x="100" y="249">근거 쪽 그림</text>
+        <rect class="mk-fill" x="20" y="284" width="30" height="30" rx="6"/><text class="mk-mut" x="27" y="303">사진</text>
+        <rect class="mk-in" x="58" y="284" width="440" height="30" rx="6"/><text class="mk-mut" x="70" y="303">질문을 입력하세요</text>
+        <rect class="mk-acc" x="506" y="284" width="34" height="30" rx="6"/>
+      </svg>
+      <p class="note">실제 화면을 단순하게 다시 그린 그림이다. 사진 단추는 도커 판에서만 동작한다.</p>
+      <ul>
+        <li>위에서 제품 · 언어를 고르고 묻는다. 답은 글자가 흘러나오듯 뜬다(SSE).</li>
+        <li>답 아래에 Claude 가 인용한 쪽이 번호 칩으로, 그 쪽의 그림이 작은 그림으로 붙는다.</li>
+        <li>지시문은 두 판이 같다 — 「찾은 근거 안에서만 답하고, 없으면 모른다고 하고 고객센터를 안내하라 · 질문한 언어로 답하라」.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec">
+    <summary>PHP 판 — 이미 있는 PHP 서버에 붙이는 길</summary>
+    <div class="body">
+      <figure class="flowfig"><svg class="flow-svg h" viewBox="0 0 1040 132" role="img" aria-label="PHP 판 흐름"><rect class="fb cli" x="1" y="2" width="148" height="128" rx="8"/><text class="ft" x="75.0" y="42" text-anchor="middle">질문</text><line class="fsep" x1="14" x2="136" y1="96" y2="96"/><text class="fw" x="75.0" y="117" text-anchor="middle">브라우저</text><line class="fa" x1="153" y1="66.0" x2="172" y2="66.0"/><path class="fah" d="M172,61.0 L178,66.0 L172,71.0Z"/><rect class="fb " x="179" y="2" width="148" height="128" rx="8"/><text class="ft" x="253.0" y="33" text-anchor="middle">한글이 있나?</text><text class="ft" x="253.0" y="52" text-anchor="middle">언어 판단</text><line class="fsep" x1="192" x2="314" y1="96" y2="96"/><text class="fw" x="253.0" y="117" text-anchor="middle">PHP-FPM</text><line class="fa" x1="331" y1="66.0" x2="350" y2="66.0"/><path class="fah" d="M350,61.0 L356,66.0 L350,71.0Z"/><rect class="fb ext" x="357" y="2" width="148" height="128" rx="8"/><text class="ft" x="431.0" y="33" text-anchor="middle">없으면 한국어</text><text class="ft" x="431.0" y="52" text-anchor="middle">검색어로 바꾸기</text><line class="fsep" x1="370" x2="492" y1="96" y2="96"/><text class="fw" x="431.0" y="117" text-anchor="middle">Claude API · Haiku</text><line class="fa" x1="509" y1="66.0" x2="528" y2="66.0"/><path class="fah" d="M528,61.0 L534,66.0 L528,71.0Z"/><rect class="fb " x="535" y="2" width="148" height="128" rx="8"/><text class="ft" x="609.0" y="33" text-anchor="middle">키워드 검색</text><text class="ft" x="609.0" y="52" text-anchor="middle">상위 5조각</text><line class="fsep" x1="548" x2="670" y1="96" y2="96"/><text class="fw" x="609.0" y="117" text-anchor="middle">검색 엔진</text><line class="fa" x1="687" y1="66.0" x2="706" y2="66.0"/><path class="fah" d="M706,61.0 L712,66.0 L706,71.0Z"/><rect class="fb ext" x="713" y="2" width="148" height="128" rx="8"/><text class="ft" x="787.0" y="33" text-anchor="middle">근거 5조각으로</text><text class="ft" x="787.0" y="52" text-anchor="middle">답 (스트리밍)</text><line class="fsep" x1="726" x2="848" y1="96" y2="96"/><text class="fw" x="787.0" y="117" text-anchor="middle">Claude API · Sonnet</text><line class="fa" x1="865" y1="66.0" x2="884" y2="66.0"/><path class="fah" d="M884,61.0 L890,66.0 L884,71.0Z"/><rect class="fb cli" x="891" y="2" width="148" height="128" rx="8"/><text class="ft" x="965.0" y="33" text-anchor="middle">답 + 출처</text><text class="ft" x="965.0" y="52" text-anchor="middle">+ 그림</text><line class="fsep" x1="904" x2="1026" y1="96" y2="96"/><text class="fw" x="965.0" y="117" text-anchor="middle">브라우저 ← PHP-FPM</text></svg><svg class="flow-svg v" viewBox="0 0 324 544" role="img" aria-label="PHP 판 흐름"><rect class="fb cli" x="2" y="2" width="320" height="70" rx="8"/><text class="ft" x="18" y="31">질문</text><text class="fw" x="18" y="55">브라우저</text><line class="fa" x1="162.0" y1="74" x2="162.0" y2="89"/><path class="fah" d="M157.0,89 L162.0,95 L167.0,89Z"/><rect class="fb " x="2" y="96" width="320" height="70" rx="8"/><text class="ft" x="18" y="125">한글이 있나? 언어 판단</text><text class="fw" x="18" y="149">PHP-FPM</text><line class="fa" x1="162.0" y1="168" x2="162.0" y2="183"/><path class="fah" d="M157.0,183 L162.0,189 L167.0,183Z"/><rect class="fb ext" x="2" y="190" width="320" height="70" rx="8"/><text class="ft" x="18" y="219">없으면 한국어 검색어로 바꾸기</text><text class="fw" x="18" y="243">Claude API · Haiku</text><line class="fa" x1="162.0" y1="262" x2="162.0" y2="277"/><path class="fah" d="M157.0,277 L162.0,283 L167.0,277Z"/><rect class="fb " x="2" y="284" width="320" height="70" rx="8"/><text class="ft" x="18" y="313">키워드 검색 상위 5조각</text><text class="fw" x="18" y="337">검색 엔진</text><line class="fa" x1="162.0" y1="356" x2="162.0" y2="371"/><path class="fah" d="M157.0,371 L162.0,377 L167.0,371Z"/><rect class="fb ext" x="2" y="378" width="320" height="70" rx="8"/><text class="ft" x="18" y="407">근거 5조각으로 답 (스트리밍)</text><text class="fw" x="18" y="431">Claude API · Sonnet</text><line class="fa" x1="162.0" y1="450" x2="162.0" y2="465"/><path class="fah" d="M157.0,465 L162.0,471 L167.0,465Z"/><rect class="fb cli" x="2" y="472" width="320" height="70" rx="8"/><text class="ft" x="18" y="501">답 + 출처 + 그림</text><text class="fw" x="18" y="525">브라우저 ← PHP-FPM</text></svg></figure>
+      <ul class="key">
+        <li><i class="cli"></i>브라우저</li>
+        <li><i></i>내 서버 안 (PHP-FPM · 검색 엔진)</li>
+        <li><i class="ext"></i>바깥 Claude API</li>
+      </ul>
+      <ul>
+        <li>PHP 8.3 + PHP-FPM + nginx, 검색은 키워드 검색 엔진(Meilisearch).</li>
+        <li>키워드 검색은 낱말이 같아야 찾는다. 자료가 한국어라, 질문에 한글이 없으면 Claude Haiku 가 매뉴얼 쪽 제목 목록을 보고 <b>한국어 검색어</b>로 바꾼 뒤 찾는다.</li>
+        <li>답은 Claude Sonnet 이 쓰고 PHP 가 글자를 그대로 흘려 보낸다. 그동안 PHP-FPM 일꾼 하나가 묶인다.</li>
+        <li>색인은 712조각에 2.6초.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec">
+    <summary>도커 판 — 뜻으로도 찾는 별도 서비스</summary>
+    <div class="body">
+      <figure class="flowfig"><svg class="flow-svg h" viewBox="0 0 1040 132" role="img" aria-label="도커 판 흐름"><rect class="fb cli" x="1" y="2" width="148" height="128" rx="8"/><text class="ft" x="75.0" y="33" text-anchor="middle">질문</text><text class="ft" x="75.0" y="52" text-anchor="middle">(사진도 가능)</text><line class="fsep" x1="14" x2="136" y1="96" y2="96"/><text class="fw" x="75.0" y="117" text-anchor="middle">브라우저</text><line class="fa" x1="153" y1="66.0" x2="172" y2="66.0"/><path class="fah" d="M172,61.0 L178,66.0 L172,71.0Z"/><rect class="fb " x="179" y="2" width="148" height="128" rx="8"/><text class="ft" x="253.0" y="33" text-anchor="middle">질문을</text><text class="ft" x="253.0" y="52" text-anchor="middle">숫자 벡터로</text><line class="fsep" x1="192" x2="314" y1="96" y2="96"/><text class="fw" x="253.0" y="117" text-anchor="middle">로컬 임베딩</text><line class="fa" x1="331" y1="66.0" x2="350" y2="66.0"/><path class="fah" d="M350,61.0 L356,66.0 L350,71.0Z"/><rect class="fb " x="357" y="2" width="148" height="128" rx="8"/><text class="ft" x="431.0" y="33" text-anchor="middle">의미 검색 20</text><text class="ft" x="431.0" y="52" text-anchor="middle">+ 키워드 검색 20</text><line class="fsep" x1="370" x2="492" y1="96" y2="96"/><text class="fw" x="431.0" y="117" text-anchor="middle">벡터 DB + 파이썬</text><line class="fa" x1="509" y1="66.0" x2="528" y2="66.0"/><path class="fah" d="M528,61.0 L534,66.0 L528,71.0Z"/><rect class="fb " x="535" y="2" width="148" height="128" rx="8"/><text class="ft" x="609.0" y="33" text-anchor="middle">RRF 로 섞어</text><text class="ft" x="609.0" y="52" text-anchor="middle">상위 5조각</text><line class="fsep" x1="548" x2="670" y1="96" y2="96"/><text class="fw" x="609.0" y="117" text-anchor="middle">파이썬 서비스</text><line class="fa" x1="687" y1="66.0" x2="706" y2="66.0"/><path class="fah" d="M706,61.0 L712,66.0 L706,71.0Z"/><rect class="fb ext" x="713" y="2" width="148" height="128" rx="8"/><text class="ft" x="787.0" y="33" text-anchor="middle">근거 5조각으로</text><text class="ft" x="787.0" y="52" text-anchor="middle">답 (스트리밍)</text><line class="fsep" x1="726" x2="848" y1="96" y2="96"/><text class="fw" x="787.0" y="117" text-anchor="middle">Claude API · Sonnet</text><line class="fa" x1="865" y1="66.0" x2="884" y2="66.0"/><path class="fah" d="M884,61.0 L890,66.0 L884,71.0Z"/><rect class="fb cli" x="891" y="2" width="148" height="128" rx="8"/><text class="ft" x="965.0" y="33" text-anchor="middle">답 + 출처</text><text class="ft" x="965.0" y="52" text-anchor="middle">+ 그림</text><line class="fsep" x1="904" x2="1026" y1="96" y2="96"/><text class="fw" x="965.0" y="117" text-anchor="middle">브라우저 ← 파이썬</text></svg><svg class="flow-svg v" viewBox="0 0 324 544" role="img" aria-label="도커 판 흐름"><rect class="fb cli" x="2" y="2" width="320" height="70" rx="8"/><text class="ft" x="18" y="31">질문 (사진도 가능)</text><text class="fw" x="18" y="55">브라우저</text><line class="fa" x1="162.0" y1="74" x2="162.0" y2="89"/><path class="fah" d="M157.0,89 L162.0,95 L167.0,89Z"/><rect class="fb " x="2" y="96" width="320" height="70" rx="8"/><text class="ft" x="18" y="125">질문을 숫자 벡터로</text><text class="fw" x="18" y="149">로컬 임베딩</text><line class="fa" x1="162.0" y1="168" x2="162.0" y2="183"/><path class="fah" d="M157.0,183 L162.0,189 L167.0,183Z"/><rect class="fb " x="2" y="190" width="320" height="70" rx="8"/><text class="ft" x="18" y="219">의미 검색 20 + 키워드 검색 20</text><text class="fw" x="18" y="243">벡터 DB + 파이썬</text><line class="fa" x1="162.0" y1="262" x2="162.0" y2="277"/><path class="fah" d="M157.0,277 L162.0,283 L167.0,277Z"/><rect class="fb " x="2" y="284" width="320" height="70" rx="8"/><text class="ft" x="18" y="313">RRF 로 섞어 상위 5조각</text><text class="fw" x="18" y="337">파이썬 서비스</text><line class="fa" x1="162.0" y1="356" x2="162.0" y2="371"/><path class="fah" d="M157.0,371 L162.0,377 L167.0,371Z"/><rect class="fb ext" x="2" y="378" width="320" height="70" rx="8"/><text class="ft" x="18" y="407">근거 5조각으로 답 (스트리밍)</text><text class="fw" x="18" y="431">Claude API · Sonnet</text><line class="fa" x1="162.0" y1="450" x2="162.0" y2="465"/><path class="fah" d="M157.0,465 L162.0,471 L167.0,465Z"/><rect class="fb cli" x="2" y="472" width="320" height="70" rx="8"/><text class="ft" x="18" y="501">답 + 출처 + 그림</text><text class="fw" x="18" y="525">브라우저 ← 파이썬</text></svg></figure>
+      <ul class="key">
+        <li><i class="cli"></i>브라우저</li>
+        <li><i></i>내 서버 안 (파이썬 서비스 · 벡터 DB · 로컬 임베딩)</li>
+        <li><i class="ext"></i>바깥 Claude API</li>
+      </ul>
+      <ul>
+        <li>컨테이너 3개 — 파이썬 서비스(FastAPI, 비동기), 벡터 DB(Qdrant), 로컬 임베딩(multilingual-e5-large, CPU 에서 돈다).</li>
+        <li>질문을 임베딩해 <b>뜻이 가까운 조각 20개</b>, 키워드(한글 두 글자씩 끊기)로 <b>낱말이 맞는 조각 20개</b>를 찾고 RRF 로 섞어 5개를 고른다.</li>
+        <li>다국어 임베딩이라 대부분 언어는 번역 없이 찾는다. 임베딩이 약한 크메르어만 Haiku 가 한국어 검색어를 더 만든다.</li>
+        <li>사진을 같이 보내면 Claude 가 사진과 근거를 함께 본다. 같은 질문은 답을 기억해 두었다가 바로 돌려준다(시험 때는 껐다).</li>
+        <li>색인은 712조각에 302초(CPU 임베딩, 조각당 약 0.42초). 임베딩 모델을 처음 받을 때 2.2GB.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec">
+    <summary>두 판 나란히</summary>
+    <div class="body">
+      <div class="tw"><table>
+        <tr><th></th><th>PHP 판</th><th>도커 판</th></tr>
+        <tr><td>무엇으로</td><td>PHP-FPM + nginx + 키워드 검색 엔진. 외국어 질문은 Haiku 가 한국어 검색어로</td><td>파이썬 서비스 + 벡터 DB + 로컬 임베딩. 뜻 검색 + 키워드 검색을 RRF 로</td></tr>
+        <tr><td>장점</td><td>있는 PHP 서버에 붙이기 쉽다. 색인이 빠르다(2.6초). 컨테이너가 늘지 않는다</td><td>다른 말 · 다른 언어로 물어도 찾는다. 스트리밍이 PHP-FPM 일꾼을 잡지 않는다. 사진 질문</td></tr>
+        <tr><td>약점</td><td>답이 흐르는 동안 FPM 일꾼 하나를 잡는다. 외국어는 번역 한 번에 달려 있다</td><td>컨테이너 3개 · 모델 2.2GB 를 운영해야 한다. 색인이 느리다(302초)</td></tr>
+        <tr><td>실측 (66문항)</td><td class="num">찾기 32/60 · 정답 20/66 · 첫 글자 2.7초 · 전체 5.4초</td><td class="num">찾기 45/60 · 정답 36/66 · 첫 글자 1.6초 · 전체 4.2초</td></tr>
+      </table></div>
+      <p class="note">시간은 질문마다 잰 값의 중앙값. 답 모델은 두 판 모두 Claude Sonnet 5.5(생각 끔 · 짧게), 같은 지시문.</p>
+    </div>
+  </details>
+
+  <details class="sec">
+    <summary>검색 방식은 이렇게 골랐다 <small>처음 13쪽 자료로 잰 값</small></summary>
+    <div class="body">
+      <p>도커 판을 만들 때 같은 50문항을 6개 언어로 옮겨, 상위 5조각 안에 정답 쪽이 들었는지만 쟀다(Claude 호출 없음).</p>
+      <div class="tw"><table>
+        <tr><th>방식</th><th>한국어</th><th>영어</th><th>일본어</th><th>중국어</th><th>베트남어</th><th>크메르어</th><th>검색 시간</th></tr>
+        <tr><td>뜻 검색만</td><td class="num">50/50</td><td class="num">50/50</td><td class="num">49/50</td><td class="num">48/50</td><td class="num">50/50</td><td class="num">33/50</td><td class="num">27~31ms</td></tr>
+        <tr><td>키워드만</td><td class="num">50/50</td><td class="num">45/50</td><td class="num">4/50</td><td class="num">3/50</td><td class="num">6/50</td><td class="num">1/50</td><td class="num">0.6ms</td></tr>
+        <tr><td>섞기 (RRF)</td><td class="num">50/50</td><td class="num">50/50</td><td class="num">50/50</td><td class="num">49/50</td><td class="num">49/50</td><td class="num">33/50</td><td class="num">27~31ms</td></tr>
+        <tr><td>섞기 + 다시 순위 매기기 모델</td><td colspan="5">미측정</td><td class="num">42/50</td><td class="num">2,579ms</td></tr>
+      </table></div>
+      <ul>
+        <li>그래서 기본은 「섞기」, 크메르어만 Haiku 검색어를 더했다(같은 크메르어 10문항에서 6/10 → 10/10). 다시 순위 매기기는 CPU 에서 질문당 2.6초라 껐다.</li>
+        <li>13쪽짜리 작은 자료라 찾기가 쉬운 편이었다. 427쪽으로 늘린 실제 시험 결과는 「시험 결과」 탭에.</li>
+      </ul>
+    </div>
+  </details>
+
+  </div>
+
+  <!-- ========== 시험 결과 ========== -->
+  <div role="tabpanel" id="p-result" aria-labelledby="t-result" hidden>
+
+  <details class="sec">
+    <summary>시험지는 이렇게 만들었다 <small>10단계 × 6언어 + 자료 밖 = 66문항</small></summary>
+    <div class="body">
+      <p>질문 10개를 쉬운 것부터 어려운 것까지 한 단계씩 만들고, 각각 6개 언어(한국어 · 영어 · 일본어 · 중국어 간체 · 베트남어 · 크메르어)로 옮겼다. 여기에 매뉴얼에 없는 질문 1개 × 6개 언어를 더했다. 질문마다 정답 쪽과 답에 들어가야 할 요점을 미리 적어 두었다.</p>
+      <div class="tw"><table>
+        <tr><th>단계</th><th>어떤 질문인가</th><th>예 (한국어)</th></tr>
+        <tr><td class="num">1</td><td>한 쪽에 있는 사실 하나</td><td>직각선 그리기 단축키가 뭐예요?</td></tr>
+        <tr><td class="num">2</td><td>한 동작의 결과</td><td>자동 배치를 중간에 멈추면 그때까지 결과는 남아요?</td></tr>
+        <tr><td class="num">3</td><td>다른 프로그램과 파일 주고받기 (설정값 여러 개)</td><td>다른 CAD 에서 만든 패턴을 가져오려면 그쪽에서 어떻게 내보내야 해요?</td></tr>
+        <tr><td class="num">4</td><td>여러 단계의 순서 (자료가 안내 쪽 · 영상 자막 · 매뉴얼에 흩어짐)</td><td>종이 패턴 사진을 찍어서 CAD 로 가져오는 순서 알려주세요</td></tr>
+        <tr><td class="num">5</td><td>실행 방법 + 옵션 설명</td><td>자동 배치는 어떻게 실행하고 옵션은 뭘 설정해야 해요?</td></tr>
+        <tr><td class="num">6</td><td>기능 이름 없이 증상으로 묻기</td><td>선 그릴 때 예전엔 길이 숫자 넣는 창이 떴는데 지금은 안 떠요. 왜 그래요?</td></tr>
+        <tr><td class="num">7</td><td>「왜 안 눌려요」 — 켜지는 조건</td><td>출력 창에서 전개도 체크가 회색이라 안 눌려요. 왜 그런 거예요?</td></tr>
+        <tr><td class="num">8</td><td>두 기능 비교</td><td>자동 배치랑 재배치는 뭐가 달라요?</td></tr>
+        <tr><td class="num">9</td><td>여러 쪽을 이어야 하는 조작</td><td>그레이딩 모드로 들어가서 Y방향으로 평행 그레이딩 하는 방법 알려주세요</td></tr>
+        <tr><td class="num">10</td><td>최근 업데이트 (업데이트 기록 + 사용법, 막연한 말투)</td><td>요즘 업데이트하고 나서 곡선 그리는 자가 좀 이상하게 바뀐 거 같은데, 뭐가 달라진 거예요?</td></tr>
+        <tr><td>밖</td><td>매뉴얼에 없는 내용 — 「모른다 + 안내」가 정답</td><td>CAD 에서 만든 패턴을 3D 아바타에 입혀서 핏 시뮬레이션 하려면 어떻게 해요?</td></tr>
+      </table></div>
+      <p class="note">제품 이름은 이 글에서 일반 이름으로 바꿨다. 단계는 질문 내용으로 정한 것이라, 숫자가 클수록 꼭 어렵다는 뜻은 아니다.</p>
+      <h3>같은 질문, 다른 언어 (1단계)</h3>
+      <ul>
+        <li>What's the shortcut key for drawing a perpendicular line?</li>
+        <li lang="ja">直角線を描くショートカットキーは何ですか？</li>
+        <li lang="zh-CN">画垂直线的快捷键是什么？</li>
+        <li lang="vi">Phím tắt để vẽ đường vuông góc là gì vậy?</li>
+        <li lang="km">តើគ្រាប់ចុចផ្លូវកាត់សម្រាប់គូសបន្ទាត់កែងគឺអ្វី?</li>
+      </ul>
+      <h3>재고 채점한 방법</h3>
+      <ul>
+        <li>화면과 똑같은 경로로 질문을 보내고(동시 3개), 첫 글자 · 끝까지 걸린 시간을 보내는 쪽(클라이언트)에서 쟀다. 같은 답 재사용은 껐다.</li>
+        <li>검색 적중 = 미리 정한 정답 쪽(한국어 · 영어 짝 중 하나)이 상위 5조각 안에 있었나.</li>
+        <li>채점은 Claude Sonnet 이 「요점」과 답을 비교해 정답 · 부분 정답 · 오답 · 바른 거절로 나눴다. 사람이 8건을 읽어 대조했고 8건 모두 같았다.</li>
+        <li>Claude 호출: 답 191회(Sonnet 132 · Haiku 59) + 채점 132회.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec">
+    <summary>난이도별 정답 <small>각 6개 언어 중</small></summary>
+    <div class="body">
+      <div class="chart" role="figure" aria-label="난이도별 정답 수, 6개 언어 중"><div class="legend"><span><i class="sw php"></i>PHP 판</span><span><i class="sw dk"></i>도커 판</span><span><i class="sw pt"></i>부분 정답 (빗금)</span></div><div class="crow"><div class="rl">1 · 사실 하나</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:16.7%"></i><i class="p php" style="width:0.0%"></i></div><b class="v num">1/6</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:50.0%"></i><i class="p dk" style="width:0.0%"></i></div><b class="v num">3/6</b></div></div></div><div class="crow"><div class="rl">2 · 동작의 결과</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:16.7%"></i><i class="p php" style="width:0.0%"></i></div><b class="v num">1/6</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:66.7%"></i><i class="p dk" style="width:16.7%"></i></div><b class="v num">4/6 · 부분 1</b></div></div></div><div class="crow"><div class="rl">3 · 파일 주고받기</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:66.7%"></i><i class="p php" style="width:0.0%"></i></div><b class="v num">4/6</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:83.3%"></i><i class="p dk" style="width:0.0%"></i></div><b class="v num">5/6</b></div></div></div><div class="crow"><div class="rl">4 · 여러 단계 순서</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:16.7%"></i><i class="p php" style="width:83.3%"></i></div><b class="v num">1/6 · 부분 5</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:66.7%"></i><i class="p dk" style="width:0.0%"></i></div><b class="v num">4/6</b></div></div></div><div class="crow"><div class="rl">5 · 실행법 + 옵션</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:66.7%"></i><i class="p php" style="width:16.7%"></i></div><b class="v num">4/6 · 부분 1</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:100.0%"></i><i class="p dk" style="width:0.0%"></i></div><b class="v num">6/6</b></div></div></div><div class="crow"><div class="rl">6 · 증상으로 묻기</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:16.7%"></i><i class="p php" style="width:50.0%"></i></div><b class="v num">1/6 · 부분 3</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:0.0%"></i><i class="p dk" style="width:50.0%"></i></div><b class="v num">0/6 · 부분 3</b></div></div></div><div class="crow"><div class="rl">7 · 왜 안 돼요</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:33.3%"></i><i class="p php" style="width:0.0%"></i></div><b class="v num">2/6</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:83.3%"></i><i class="p dk" style="width:0.0%"></i></div><b class="v num">5/6</b></div></div></div><div class="crow"><div class="rl">8 · 두 기능 비교</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:0.0%"></i><i class="p php" style="width:50.0%"></i></div><b class="v num">0/6 · 부분 3</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:50.0%"></i><i class="p dk" style="width:16.7%"></i></div><b class="v num">3/6 · 부분 1</b></div></div></div><div class="crow"><div class="rl">9 · 여러 쪽 잇기</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:0.0%"></i><i class="p php" style="width:50.0%"></i></div><b class="v num">0/6 · 부분 3</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:0.0%"></i><i class="p dk" style="width:83.3%"></i></div><b class="v num">0/6 · 부분 5</b></div></div></div><div class="crow"><div class="rl">10 · 최근 업데이트</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:0.0%"></i><i class="p php" style="width:33.3%"></i></div><b class="v num">0/6 · 부분 2</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:0.0%"></i><i class="p dk" style="width:50.0%"></i></div><b class="v num">0/6 · 부분 3</b></div></div></div><div class="crow"><div class="rl">자료 밖 (거절이 정답)</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:100.0%"></i><i class="p php" style="width:0.0%"></i></div><b class="v num">6/6</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:100.0%"></i><i class="p dk" style="width:0.0%"></i></div><b class="v num">6/6</b></div></div></div></div>
+      <ul>
+        <li>1~5단계와 7단계는 도커 판이 3~6개, PHP 판은 1~4개 맞혔다.</li>
+        <li>6 · 9 · 10단계는 두 판 모두 0~1개. 8단계는 도커 3 · PHP 0.</li>
+        <li>검색 적중(6개 중): 6단계는 도커 0 · PHP 1 — 정답 쪽을 못 찾으면 답도 못 맞혔다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec">
+    <summary>언어별 정답 <small>각 11문항 중</small></summary>
+    <div class="body">
+      <div class="chart" role="figure" aria-label="언어별 정답 수, 11문항 중"><div class="legend"><span><i class="sw php"></i>PHP 판</span><span><i class="sw dk"></i>도커 판</span><span><i class="sw pt"></i>부분 정답 (빗금)</span></div><div class="crow"><div class="rl">한국어</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:36.4%"></i><i class="p php" style="width:18.2%"></i></div><b class="v num">4/11 · 부분 2</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:54.5%"></i><i class="p dk" style="width:36.4%"></i></div><b class="v num">6/11 · 부분 4</b></div></div></div><div class="crow"><div class="rl">영어</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:27.3%"></i><i class="p php" style="width:36.4%"></i></div><b class="v num">3/11 · 부분 4</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:45.5%"></i><i class="p dk" style="width:27.3%"></i></div><b class="v num">5/11 · 부분 3</b></div></div></div><div class="crow"><div class="rl">일본어</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:18.2%"></i><i class="p php" style="width:9.1%"></i></div><b class="v num">2/11 · 부분 1</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:63.6%"></i><i class="p dk" style="width:18.2%"></i></div><b class="v num">7/11 · 부분 2</b></div></div></div><div class="crow"><div class="rl">중국어(간체)</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:27.3%"></i><i class="p php" style="width:27.3%"></i></div><b class="v num">3/11 · 부분 3</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:36.4%"></i><i class="p dk" style="width:18.2%"></i></div><b class="v num">4/11 · 부분 2</b></div></div></div><div class="crow"><div class="rl">베트남어</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:27.3%"></i><i class="p php" style="width:45.5%"></i></div><b class="v num">3/11 · 부분 5</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:54.5%"></i><i class="p dk" style="width:9.1%"></i></div><b class="v num">6/11 · 부분 1</b></div></div></div><div class="crow"><div class="rl">크메르어</div><div class="rb"><div class="bar"><span class="who">PHP</span><div class="track"><i class="c php" style="width:45.5%"></i><i class="p php" style="width:18.2%"></i></div><b class="v num">5/11 · 부분 2</b></div><div class="bar"><span class="who">도커</span><div class="track"><i class="c dk" style="width:72.7%"></i><i class="p dk" style="width:9.1%"></i></div><b class="v num">8/11 · 부분 1</b></div></div></div></div>
+      <div class="tw"><table>
+        <tr><th>검색 적중 (10문항 중)</th><th>한국어</th><th>영어</th><th>일본어</th><th>중국어</th><th>베트남어</th><th>크메르어</th></tr>
+        <tr><td>PHP 판</td><td class="num">4</td><td class="num">7</td><td class="num">2</td><td class="num">5</td><td class="num">7</td><td class="num">7</td></tr>
+        <tr><td>도커 판</td><td class="num">8</td><td class="num">6</td><td class="num">9</td><td class="num">6</td><td class="num">8</td><td class="num">8</td></tr>
+      </table></div>
+      <ul>
+        <li>PHP 판은 한국어(4/10)와 일본어(2/10)에서 특히 못 찾았다 — 이유는 아래 실패 원인 2 · 3.</li>
+        <li>크메르어는 정답이 가장 많았지만(도커 8/11) 답 끝까지 걸린 시간이 가장 길었다(중앙값 도커 9.4초 · PHP 10.8초). 같은 내용도 글자 토큰이 많이 나온다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec">
+    <summary>속도 · 사용량</summary>
+    <div class="body">
+      <div class="tw"><table>
+        <tr><th></th><th>첫 글자 중앙값</th><th>끝까지 중앙값</th><th>Sonnet 호출 · 입력 · 출력 토큰</th><th>Haiku 호출</th></tr>
+        <tr><td>PHP 판</td><td class="num">2.7초</td><td class="num">5.4초</td><td class="num">66 · 165,002 · 26,247</td><td class="num">48</td></tr>
+        <tr><td>도커 판</td><td class="num">1.6초</td><td class="num">4.2초</td><td class="num">66 · 149,727 · 27,143</td><td class="num">11</td></tr>
+      </table></div>
+      <ul>
+        <li>PHP 판은 외국어 질문마다 Haiku 로 검색어를 만드는 시간이 첫 글자 앞에 붙는다. 도커 판은 크메르어만 그렇다.</li>
+        <li>지시문은 프롬프트 캐시로 읽었다(질문마다 924 토큰).</li>
+        <li>금액 환산은 미측정.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec">
+    <summary>틀린 이유 5가지</summary>
+    <div class="body">
+      <ol class="fail">
+        <li><b>자를 때 단축키 제목이 사라졌다 (두 판).</b> 매뉴얼은 「(VV) 직각선을 그릴 때 쓰는 도구」처럼 제목에 단축키를 적고 바로 다음 제목으로 넘어가는데, 본문 없는 제목 줄이 조각에서 빠졌다. 정답 쪽은 찾고도 「단축키를 못 찾았다」고 답했다(1단계 정답 PHP 1 · 도커 3). 매뉴얼 대부분이 이 모양이라 영향이 크다.</li>
+        <li><b>PHP 판이 일본어를 한국어로 착각했다.</b> 「한글이 있나」 검사 규칙이 일본어 쉼표 · 마침표(、。)에도 걸려 번역을 건너뛰었고, 일본어 그대로 키워드 검색을 했다(일본어 적중 2/10).</li>
+        <li><b>PHP 판은 한국어 문장을 통째로 검색했다.</b> 「자동 배치 · 재배치」 같은 핵심어보다 다른 낱말이 앞섰다(한국어 적중 4/10). 한국어도 검색어를 다듬어야 한다.</li>
+        <li><b>증상으로 묻는 질문은 쪽 제목과 안 맞는다 (두 판).</b> 「길이 넣는 창이 안 떠요」의 답은 「대화창 켜기(F9)」 쪽인데, 선 그리기 쪽만 찾아 F9 를 말하지 못했다(6단계 도커 0/6).</li>
+        <li><b>업데이트 기록 한 쪽이 너무 크다 (두 판).</b> 40여 조각으로 쪼개져 아무 질문에나 걸리고, 정작 필요한 「곡선자 변경」 조각은 못 찾았다(10단계 두 판 0/6). PHP 판은 Haiku 가 여러 줄로 답하면 마지막 줄만 써서 검색어가 조각난 경우도 있었다.</li>
+      </ol>
+    </div>
+  </details>
+
+  <!-- V2-RESULTS -->
+  <details class="sec">
+    <summary>수정 후 재시험 — 같은 66문항 <small>찾기는 크게, 정답은 조금 올랐다</small></summary>
+    <div class="body">
+      <p>위 실패 원인을 고치고(제목만 있는 줄 살리기 · 릴리스 노트를 버전별로 자르기 · 한 쪽이 상위 5를 독점하지 않게 · 모든 질문에 작은 모델로 한국어 검색어 만들기 · 일본어 판별 고치기) 같은 질문을 다시 물었다.</p>
+      <div class="tw"><table>
+        <tr><th>판</th><th>맞는 쪽 찾음 (60)</th><th>정답 (66)</th><th>첫 글자 중앙값</th><th>답 완료 중앙값</th></tr>
+        <tr><td>PHP 판</td><td class="num">32 → 39</td><td class="num">20 → 21</td><td class="num">2.7 → 2.8초</td><td class="num">5.4 → 5.8초</td></tr>
+        <tr><td>도커 판</td><td class="num">45 → 53</td><td class="num">36 → 40</td><td class="num">1.6 → 2.8초</td><td class="num">4.2 → 6.5초</td></tr>
+      </table></div>
+      <ul>
+        <li><b>가장 효과가 컸던 것</b>: 질문마다 작은 모델이 한국어 검색어를 만들게 한 것. 도커 판에서 이것만 빼면 39/60, 넣으면 53/60. 「길이 넣는 창이 안 떠요」 같은 증상 질문(6단계)도 정답 0 → 4/6.</li>
+        <li><b>대가</b>: 검색어 만들기가 질문마다 약 1.3초를 더해 도커 판 첫 글자가 1.6 → 2.8초로 느려졌다.</li>
+        <li><b>언어별 정답(도커 판)</b>: 영어 5 → 7, 중국어 4 → 6, 크메르어 8 → 9, 일본어 · 베트남어 그대로, 한국어 6 → 5 (각 11문항).</li>
+        <li><b>찾았는데 틀리는 문제는 남았다</b>: 릴리스 노트 질문(10단계)은 맞는 버전 조각을 찾고도 다른 버전 내용을 말해 두 판 모두 0/6. 비교 · 여러 쪽 질문(8 · 9단계)도 0~3/6.</li>
+        <li><b>나빠진 곳</b>: 도커 판 4 · 5단계 정답이 4 → 1, 6 → 4. 만든 검색어에 엉뚱한 쪽 제목이 섞여 핵심 조각이 밀렸다. 아직 고치지 않았다.</li>
+      </ul>
+      <p class="note">다음에 할 것: 검색어를 원래 질문 검색과 섞어 쓰기(대체하지 않기) · 버전 질문은 버전 번호로 거르기 · 검색어 만들기를 정답에 도움이 되는 경우에만 켜서 속도 되찾기.</p>
+    </div>
+  </details>
+  <!-- /V2-RESULTS -->
+
+  <details class="sec">
+    <summary>부록 — 처음 작은 실험 (매뉴얼 13쪽) <small>속도 · 동시 사용자</small></summary>
+    <div class="body">
+      <p>두 판을 만들기 전에, CAD 프로그램 「그리기」 메뉴 13쪽만 가지고 먼저 쟀다. 지금도 쓸모 있는 것만 남긴다.</p>
+      <h3>자료를 통째로 넣어도 빨랐다</h3>
+      <ul>
+        <li>13쪽 전부를 지시문에 넣고 캐시하면 한국어 50문항 첫 글자 중앙값 1.09초(Sonnet) · 1.42초(Haiku). 자료 밖 질문 10개는 모든 조합에서 「모른다 · 안내」.</li>
+        <li>자료 속 그림 주소가 토큰의 약 2/3 였다. 주소를 빼니 26,125 → 8,834 토큰. 그래서 그림은 자료에서 빼고 화면에서 근거 쪽 그림을 붙인다.</li>
+        <li>427쪽(약 97,600 토큰 어림)으로 늘린 이번 시험에서는 통째 넣기를 재지 않았다.</li>
+      </ul>
+      <h3>PHP-FPM 은 스트림 하나가 일꾼 하나를 잡는다</h3>
+      <p class="note">가짜 AI(첫 글자 0.8초, 한 답 5.8초)로 PHP-FPM · nginx 만 쟀다. 같은 때 가벼운 상태 확인 요청을 0.1초마다 보내 일반 페이지가 얼마나 밀리는지 봤다.</p>
+      <div class="tw"><table>
+        <tr><th>FPM 일꾼</th><th>동시 답</th><th>첫 글자 p50 / p95</th><th>일반 요청 p95</th><th>실패</th></tr>
+        <tr><td class="num">10</td><td class="num">20</td><td class="num">0.82 / 6.63초</td><td class="num">11.01초</td><td class="num">0%</td></tr>
+        <tr><td class="num">10</td><td class="num">50</td><td class="num">12.42 / 24.04초</td><td class="num">27.52초</td><td class="num">0%</td></tr>
+        <tr><td class="num">10</td><td class="num">100</td><td class="num">24.05 / 53.08초</td><td class="num">55.05초</td><td class="num">0%</td></tr>
+        <tr><td class="num">50</td><td class="num">20</td><td class="num">0.82 / 0.82초</td><td class="num">0.00초</td><td class="num">0%</td></tr>
+        <tr><td class="num">50</td><td class="num">50</td><td class="num">0.82 / 0.82초</td><td class="num">5.41초</td><td class="num">0%</td></tr>
+        <tr><td class="num">50</td><td class="num">100</td><td class="num">0.84 / 6.64초</td><td class="num">11.01초</td><td class="num">0%</td></tr>
+      </table></div>
+      <ul>
+        <li>일꾼보다 동시 답이 많으면 실패는 없지만 대기열에서 기다려 첫 글자가 수십 초로 밀린다. 일반 페이지도 같이 막힌다.</li>
+        <li>도커 판(비동기)으로 같은 부하를 잰 값은 미측정이다.</li>
+      </ul>
+    </div>
+  </details>
+
+  </div>
+
+  <!-- ========== 배운 것 · 다음 ========== -->
+  <div role="tabpanel" id="p-next" aria-labelledby="t-next" hidden>
+
+  <details class="sec">
+    <summary>배운 것</summary>
     <div class="body">
       <ol>
-        <li><b>속도는 충분하다.</b> 1 · 2단계 모두 첫 글자가 1초 남짓, 답 완료가 2~3초다. 단계보다 모델과 답 길이가 시간을 정한다.</li>
-        <li><b>답 품질은 Sonnet 이 낫다.</b> 한국어 질문 50개 중 자동 통과가 Sonnet 40 · 36, Haiku 27 · 29 (1단계 · 2단계).</li>
-        <li><b>2단계 키워드 검색은 외국어 질문에서 무너진다.</b> 한국어 질문은 정답 쪽을 48/50 찾았지만 영어 · 일본어 · 중국어 · 베트남어 · 크메르어는 10개 중 0~1개. 1단계(통째로 넣기)는 이 문제가 없다.</li>
-        <li><b>PHP-FPM 은 스트림 하나가 일꾼 하나를 잡는다.</b> 동시 사용자 N 명을 밀리지 않게 받으려면 일꾼이 약 N 개 필요하고, 모자라면 일반 페이지 요청까지 같이 막힌다.</li>
-        <li><b>자료의 그림 주소가 토큰의 약 2/3.</b> 주소를 빼면 프롬프트가 26,125 → 8,834 토큰으로 줄었다. 그림은 화면에서 근거 쪽에 붙이면 된다.</li>
+        <li><b>찾기가 답을 정한다.</b> 같은 Claude 모델 · 같은 지시문인데 정답이 20 대 36으로 갈렸다. 다른 것은 검색뿐이다.</li>
+        <li><b>자르는 방법이 검색만큼 중요하다.</b> 제목 한 줄이 빠지자 쉬운 1단계 질문을 틀렸다. 조각을 눈으로 몇 개 열어 보는 일을 건너뛰면 안 된다.</li>
+        <li><b>작은 규칙 하나가 한 언어를 통째로 망친다.</b> 한글 판별 규칙 하나 때문에 PHP 판 일본어 적중이 2/10 이었다. 언어마다 따로 재야 보인다.</li>
+        <li><b>다국어 임베딩은 번역 없이도 꽤 찾는다.</b> 도커 판 일본어 적중 9/10. 다만 크메르어처럼 약한 언어는 따로 손봐야 한다.</li>
+        <li><b>「모른다」는 잘 지켰다.</b> 두 판 모두 자료 밖 질문 6/6. 지시문 한 줄과 근거만 주는 구조로 충분했다.</li>
+        <li><b>채점도 AI 에게 맡길 수 있지만 사람이 몇 건은 읽는다.</b> 이번엔 8건 대조해 8건 모두 같은 판정이었다.</li>
       </ol>
     </div>
   </details>
 
   <details class="sec">
-    <summary>R2. 빠른 시험 — 쉬움 · 중간 · 어려움 3문항</summary>
-    <div class="body">
-      <p class="note">1단계(매뉴얼 전부를 system 에 넣고 프롬프트 캐시), 문항마다 한 번씩. 출력 상한 800 토큰. 「근거 맞춤」 = 답이 인용한 쪽이 기대한 쪽과 맞은 수.</p>
-      <div class="tw"><table>
-        <tr><th>모델</th><th>난이도</th><th>질문</th><th>첫 글자</th><th>완료</th><th>캐시 쓰기</th><th>캐시 읽기</th><th>출력</th><th>근거 맞춤</th></tr>
-        <tr><td>Sonnet 5.5</td><td>쉬움</td><td>직각선 그리는 법</td><td class="num">2.42s</td><td class="num">4.81s</td><td class="num">26,125</td><td class="num">0</td><td class="num">536</td><td>1/1</td></tr>
-        <tr><td>Sonnet 5.5</td><td>중간</td><td>곡선을 평행 복사하면 모양이 변하는 이유</td><td class="num">1.12s</td><td class="num">2.43s</td><td class="num">0</td><td class="num">26,125</td><td class="num">172</td><td>1/1</td></tr>
-        <tr><td>Sonnet 5.5</td><td>어려움</td><td>(영어) 사각형 모서리 둥글게 + 안쪽 평행선</td><td class="num">4.57s</td><td class="num">7.02s</td><td class="num">0</td><td class="num">26,125</td><td class="num">800 (잘림)</td><td>1/3</td></tr>
-        <tr><td>Haiku 5.5</td><td>쉬움</td><td>같은 질문</td><td class="num">1.02s</td><td class="num">2.36s</td><td class="num">26,125</td><td class="num">0</td><td class="num">404</td><td>1/1</td></tr>
-        <tr><td>Haiku 5.5</td><td>중간</td><td>같은 질문</td><td class="num">1.69s</td><td class="num">2.45s</td><td class="num">0</td><td class="num">26,125</td><td class="num">355</td><td>1/1</td></tr>
-        <tr><td>Haiku 5.5</td><td>어려움</td><td>같은 질문</td><td class="num">3.53s</td><td class="num">4.74s</td><td class="num">0</td><td class="num">26,125</td><td class="num">800 (잘림)</td><td>2/3</td></tr>
-      </table></div>
-      <h3 class="sub">그림 주소를 뺀 자료로 다시 (Sonnet 5.5, 출력 상한 1500)</h3>
-      <div class="tw"><table>
-        <tr><th>난이도</th><th>첫 글자</th><th>완료</th><th>캐시 쓰기</th><th>캐시 읽기</th><th>출력</th><th>근거 맞춤</th></tr>
-        <tr><td>쉬움</td><td class="num">3.07s</td><td class="num">5.43s</td><td class="num">8,834</td><td class="num">0</td><td class="num">794</td><td>1/1</td></tr>
-        <tr><td>중간</td><td class="num">0.96s</td><td class="num">2.35s</td><td class="num">0</td><td class="num">8,834</td><td class="num">154</td><td>1/1</td></tr>
-        <tr><td>어려움</td><td class="num">5.83s</td><td class="num">9.14s</td><td class="num">0</td><td class="num">8,834</td><td class="num">893 (끝까지)</td><td>2/3</td></tr>
-      </table></div>
-      <ul>
-        <li>첫 질문만 캐시 쓰기, 그다음부터 캐시 읽기 — 캐시가 걸리는 것을 확인했다.</li>
-        <li>세 문항 모두 매뉴얼대로 맞는 조작 순서를 답했고 지어낸 내용은 못 봤다(눈으로 확인, 자동 채점 아님).</li>
-        <li>어려운 문항은 출력 800 에서 잘렸다 — 상한을 1500 으로 올리니 끝까지 나왔다.</li>
-      </ul>
-    </div>
-  </details>
-
-  <details class="sec">
-    <summary>R3. 실제 API 307회 — 지연 · 토큰</summary>
-    <div class="body">
-      <p class="note">시험지: 자료 안 질문 50 + 자료 밖 질문 10(한국어), 같은 질문을 5개 언어로 옮긴 것. 질문 하나 = 요청 하나(대화 이력 없음), max_tokens 1024, 「10문장 이내 · 자료에 없으면 모른다고 답하고 고객센터 안내」 지시. PHP-FPM(일꾼 10)에서 호출, 동시 5. 토큰은 해당 줄 호출 전체의 합계(금액 환산 안 함).</p>
-      <div class="tw"><table>
-        <tr><th>모델</th><th>단계</th><th>질문 언어</th><th>호출</th><th>첫 글자 p50 / p95</th><th>완료 p50 / p95</th><th>입력</th><th>캐시 생성</th><th>캐시 읽기</th><th>출력</th></tr>
-        <tr><td>Sonnet 5.5</td><td>1 통째</td><td>한국어</td><td class="num">62</td><td class="num">1.09s / 2.39s</td><td class="num">2.95s / 4.99s</td><td class="num">1,482</td><td class="num">15,956</td><td class="num">973,016</td><td class="num">19,817</td></tr>
-        <tr><td>Sonnet 5.5</td><td>2 검색</td><td>한국어</td><td class="num">60</td><td class="num">1.02s / 2.66s</td><td class="num">2.94s / 4.52s</td><td class="num">248,958</td><td class="num">0</td><td class="num">0</td><td class="num">17,941</td></tr>
-        <tr><td>Haiku 5.5</td><td>1 통째</td><td>한국어</td><td class="num">60</td><td class="num">1.42s / 2.53s</td><td class="num">2.13s / 4.28s</td><td class="num">1,447</td><td class="num">79,780</td><td class="num">877,580</td><td class="num">21,704</td></tr>
-        <tr><td>Haiku 5.5</td><td>2 검색</td><td>한국어</td><td class="num">60</td><td class="num">0.84s / 2.12s</td><td class="num">1.64s / 3.35s</td><td class="num">248,958</td><td class="num">0</td><td class="num">0</td><td class="num">16,672</td></tr>
-        <tr><td>Sonnet 5.5</td><td>2 검색</td><td>다른 5개 언어</td><td class="num">65</td><td class="num">1.66s / 2.93s</td><td class="num">3.03s / 7.40s</td><td class="num">13,511</td><td class="num">0</td><td class="num">0</td><td class="num">18,876</td></tr>
-      </table></div>
-      <ul>
-        <li>1단계 프롬프트(매뉴얼 13쪽)는 실제 약 16,000 토큰. 대부분 캐시 읽기로 처리됐다.</li>
-        <li>2단계는 질문 하나에 입력 약 4,100 토큰(상위 5쪽).</li>
-        <li>첫 글자 시간은 모델이 생각하는 시간을 포함한다.</li>
-      </ul>
-    </div>
-  </details>
-
-  <details class="sec">
-    <summary>R4. 정답 판정</summary>
-    <div class="body">
-      <p class="note">자동 판정 = 문자열 기준. 기대 요점의 낱말이 80% 이상 들어가면 통과, 50~80% 는 수동 확인 필요, 그 아래는 미흡. 의역은 놓칠 수 있어 「수동 확인」 이 곧 오답은 아니다.</p>
-      <div class="tw"><table>
-        <tr><th>모델 · 단계</th><th>자료 안 질문 50 (통과 / 수동 확인 / 미흡)</th><th>자료 밖 질문 10</th></tr>
-        <tr><td>Sonnet 5.5 · 1단계</td><td class="num">40 / 12 / 0</td><td>10 모두 「모른다 · 안내」</td></tr>
-        <tr><td>Sonnet 5.5 · 2단계</td><td class="num">36 / 13 / 1</td><td>10 모두 「모른다 · 안내」</td></tr>
-        <tr><td>Haiku 5.5 · 1단계</td><td class="num">27 / 23 / 0</td><td>10 모두 「모른다 · 안내」</td></tr>
-        <tr><td>Haiku 5.5 · 2단계</td><td class="num">29 / 17 / 4</td><td>10 모두 「모른다 · 안내」</td></tr>
-        <tr><td>Sonnet 5.5 · 2단계 · 다른 언어</td><td colspan="2">65개 모두 수동 확인 필요 — 요점이 한국어라 자동 판정하지 않음 (미확인)</td></tr>
-      </table></div>
-    </div>
-  </details>
-
-  <details class="sec">
-    <summary>R5. 언어별 — 2단계 검색이 정답 쪽을 찾았나</summary>
-    <div class="body">
-      <p class="note">자료는 한국어뿐, 색인에 영문 제목만 더함. 질문 번역 · 임베딩 없는 순수 키워드 검색. 「정답 쪽 포함」 = 상위 5쪽 안에 기대한 쪽이 있었나.</p>
-      <div class="tw"><table>
-        <tr><th>질문 언어</th><th>정답 쪽 포함 (API 시험)</th><th>검색만 따로: top1 / top3 / top5 (50문항)</th></tr>
-        <tr><td>한국어</td><td class="num">48/50</td><td class="num">78% / 96% / 96%</td></tr>
-        <tr><td>영어</td><td class="num">0/10</td><td class="num">2% / 2% / 2%</td></tr>
-        <tr><td>일본어</td><td class="num">1/10</td><td class="num">2% / 2% / 4%</td></tr>
-        <tr><td>중국어(간체)</td><td class="num">0/10</td><td class="num">0% / 0% / 0%</td></tr>
-        <tr><td>베트남어</td><td class="num">0/10</td><td class="num">0% / 0% / 0%</td></tr>
-        <tr><td>크메르어</td><td class="num">0/10</td><td class="num">0% / 0% / 0%</td></tr>
-      </table></div>
-      <ul>
-        <li>검색 자체는 빠르다 — p50 1.1ms, p95 2.6ms.</li>
-        <li>고치는 길: 질문을 한국어로 바꾼 뒤 검색 · 의미(벡터) 검색 · 자료에 언어별 메뉴 이름을 같이 적기. 어느 것이 나은지는 미측정.</li>
-      </ul>
-    </div>
-  </details>
-
-  <details class="sec">
-    <summary>R6. PHP-FPM 동시 사용자 — 가짜 LLM 으로</summary>
-    <div class="body">
-      <p class="note">LLM 을 가짜 스트림(첫 글자 0.8초, 초당 60토큰 × 300토큰 = 한 스트림 5.8초)으로 바꿔 PHP-FPM · nginx 만 잼. 같은 때 가벼운 <code>/health</code> 요청을 0.1초마다 보내 일반 페이지가 얼마나 밀리는지 봄. 같은 맥 안이라 망 지연 없음. 1 · 2단계 결과가 거의 같아 1단계만 싣는다.</p>
-      <div class="tw"><table>
-        <tr><th>FPM 일꾼</th><th>동시 스트림</th><th>첫 글자 p50 / p95</th><th>완료 p95</th><th>/health p95</th><th>실패</th></tr>
-        <tr><td>10</td><td>20</td><td class="num">0.82s / 6.63s</td><td class="num">11.63s</td><td class="num">11.01s</td><td>0%</td></tr>
-        <tr><td>10</td><td>50</td><td class="num">12.42s / 24.04s</td><td class="num">29.04s</td><td class="num">27.52s</td><td>0%</td></tr>
-        <tr><td>10</td><td>100</td><td class="num">24.05s / 53.08s</td><td class="num">58.08s</td><td class="num">55.05s</td><td>0%</td></tr>
-        <tr><td>50</td><td>20</td><td class="num">0.82s / 0.82s</td><td class="num">5.82s</td><td class="num">0.00s</td><td>0%</td></tr>
-        <tr><td>50</td><td>50</td><td class="num">0.82s / 0.82s</td><td class="num">5.83s</td><td class="num">5.41s</td><td>0%</td></tr>
-        <tr><td>50</td><td>100</td><td class="num">0.84s / 6.64s</td><td class="num">11.64s</td><td class="num">11.01s</td><td>0%</td></tr>
-      </table></div>
-      <ul>
-        <li>일꾼보다 스트림이 많으면 넘친 요청은 대기열에서 기다린다 — 실패는 없지만 첫 글자가 수십 초로 밀린다.</li>
-        <li><code>/health</code> 도 같은 일꾼을 써서 함께 막힌다. 스트리밍과 일반 페이지를 같은 FPM 풀에 두면 안 된다.</li>
-        <li>스트림이 없을 때 <code>/health</code> 는 p95 약 5ms.</li>
-        <li>실제 API 로 잰 동시 측정은 동시 5까지만이다(비용 상한). 더 큰 동시 수는 미측정.</li>
-      </ul>
-    </div>
-  </details>
-
-  <details class="sec">
-    <summary>R7. 이 숫자로 정한 것 · 아직 모르는 것</summary>
+    <summary>다음에 할 것 · 아직 모르는 것</summary>
     <div class="body">
       <ol>
-        <li><b>데모는 1단계 + Sonnet</b> — 자료가 작아 통째로 넣어도 1초대에 첫 글자가 나오고, 외국어 질문에도 자료를 다 보고 답한다.</li>
-        <li>자료의 그림 주소는 빼고, 화면에서 근거 쪽 그림을 붙인다.</li>
-        <li>2단계로 갈 때는 다국어 검색부터 손본다 — 지금 그대로면 외국어 질문은 근거를 못 받는다.</li>
-        <li>스트리밍을 PHP-FPM 에 둘 거면 채팅 전용 풀을 따로 두고, 동시 사용자 수만큼 일꾼을 잡는다.</li>
+        <li>재시험에서 나빠진 4 · 5단계와, 찾고도 틀리는 릴리스 노트 · 비교 질문 고치기.</li>
+        <li>외국어 답을 사람이 직접 읽어 자동 채점과 맞춰 보기 — 미측정.</li>
+        <li>실제 Claude 로 동시 사용자 20명 이상 — 미측정 (처음 실험은 동시 5까지).</li>
+        <li>도커 판의 동시 사용자 · 질문당 금액 — 미측정.</li>
       </ol>
-      <p class="note">아직 모르는 것: 외국어 답 65개의 실제 정답 여부(사람 확인 전) · 실제 API 동시 20 이상 · 3단계 도커 서비스 수치 · 질문당 금액.</p>
     </div>
   </details>
+
+  <details class="sec">
+    <summary>처음 계획과 달라진 점 <small>앞 글의 3단계 안</small></summary>
+    <div class="body">
+      <p>처음에는 ① 자료를 통째로 넣는 PHP → ② PHP + 검색 → ③ 도커 서비스 순서로 키우려 했다. 두 AI(Claude · Codex)에게 따로 물었을 때도 「작게 시작해 답 품질을 재고, 찾기가 어려워지면 검색, 사진 질문 · 동시 사용자가 필요하면 별도 서비스」로 결론이 같았다.</p>
+      <ul>
+        <li>①은 13쪽에서 빠르고 정확했다(부록). 자료가 427쪽이 된 이번 시험은 ② PHP 판과 ③ 도커 판만 나란히 쟀다.</li>
+        <li>계획 때 「확인 필요」였던 외국어 검색은 실제로 갈렸다 — 키워드만으로는 일본어 · 중국어 · 베트남어 · 크메르어가 거의 안 찾혔고(13쪽 실험), 섞기 검색으로 대부분 풀렸다.</li>
+        <li>「별도 서비스가 동시 사용자를 더 버틴다」는 아직 예상이다 — 재지 않았다.</li>
+      </ul>
+    </div>
+  </details>
+
   </div>
 
   <footer><a href="../">← 학습 목록</a></footer>
 </div>
 <script>
 (()=>{const tabs=[...document.querySelectorAll('[role=tab]')];
+const hash={'t-glance':'','t-how':'#how','t-result':'#result','t-next':'#next'};
 function show(id,push){tabs.forEach(t=>{const on=t.id===id;t.setAttribute('aria-selected',on);t.tabIndex=on?0:-1;document.getElementById(t.getAttribute('aria-controls')).hidden=!on});
- if(push)history.replaceState(null,'',id==='t-result'?'#result':location.pathname)}
+ if(push)history.replaceState(null,'',hash[id]||location.pathname)}
 tabs.forEach((t,i)=>{t.addEventListener('click',()=>show(t.id,true));
  t.addEventListener('keydown',e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;const n=tabs[(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];show(n.id,true);n.focus()})});
-show(location.hash==='#result'?'t-result':'t-plan',false)})();
+const start=Object.keys(hash).find(k=>hash[k]&&hash[k]===location.hash)||'t-glance';
+show(start,false)})();
 </script>
 </body>
 </html>
