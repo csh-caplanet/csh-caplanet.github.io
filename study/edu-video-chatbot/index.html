@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>교육 영상 챗봇 — 구성안 비교 (LangChain 없이 시작하기)</title>
+<meta name="description" content="교육 영상 시청자 질문에 답하는 챗봇을 노코드 · 검색만 · LLM 직접 호출 · LangChain RAG 로 나눠 비교한 학습 노트">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;600;700&family=IBM+Plex+Sans+KR:wght@300;400;600&display=swap">
+<style>
+:root{
+  color-scheme:light dark;
+  --c-bg:light-dark(#f5f2ea,#14161b);--c-surface:light-dark(#fdfbf6,#1b1e25);
+  --c-text:light-dark(#1b1d23,#e6e3dc);--c-muted:light-dark(#5d6270,#8b8f9a);
+  --c-accent:light-dark(#8a6424,#c8a15a);--c-line:light-dark(#dcd5c6,#2b2f3a);
+  --font-display:"Hahmlet","Apple SD Gothic Neo",Georgia,serif;
+  --font-body:"IBM Plex Sans KR","Apple SD Gothic Neo",-apple-system,system-ui,sans-serif;
+  --container:min(92vw,1100px);--r:10px;--ease:cubic-bezier(.22,1,.36,1);
+}
+*{box-sizing:border-box}
+@media (min-width:2400px){html{font-size:118.75%}}
+body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--font-body);font-weight:300;line-height:1.75;word-break:keep-all;-webkit-font-smoothing:antialiased}
+.wrap{width:var(--container);margin-inline:auto;padding-inline:clamp(1rem,.8rem + 1.5vw,2.5rem)}
+header{padding-block:clamp(2rem,1.5rem + 2vw,3.5rem) 1.5rem;border-bottom:1px solid var(--c-line)}
+h1,h3{font-family:var(--font-display);font-weight:600;letter-spacing:-.02em;margin:0}
+h1{font-size:clamp(1.7rem,1.3rem + 2vw,2.8rem);line-height:1.2}
+.lead{color:var(--c-muted);margin:.7rem 0 0;max-width:62ch}
+.meta{font-size:.85rem;color:var(--c-muted);margin-top:.6rem}
+a{color:var(--c-accent)}
+details.sec{border-bottom:1px solid var(--c-line)}
+details.sec>summary{cursor:pointer;list-style:none;padding-block:1.2rem;display:flex;gap:.8rem;align-items:center;font-family:var(--font-display);font-size:clamp(1.15rem,1rem + .6vw,1.5rem);font-weight:600}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::before{content:"";width:.5rem;height:.5rem;border-right:1.5px solid var(--c-accent);border-bottom:1.5px solid var(--c-accent);transform:rotate(-45deg);transition:transform .2s var(--ease);flex:none}
+details.sec[open]>summary::before{transform:rotate(45deg)}
+summary:focus-visible{outline:2px solid var(--c-accent);outline-offset:2px}
+.body{padding-bottom:2.2rem}
+.note{color:var(--c-muted);max-width:70ch}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{border-bottom:1px solid var(--c-line);padding:.5rem .6rem;text-align:left;vertical-align:top}
+th{font-weight:600;color:var(--c-muted)}
+.opt{border:1px solid var(--c-line);border-radius:var(--r);background:var(--c-surface);padding:1rem 1.2rem;margin:0 0 1.1rem}
+.opt h3{font-size:1.12rem;margin-bottom:.3rem}
+.opt ul{margin:.3rem 0 0;padding-left:1.2rem}
+.tag{font-family:var(--font-body);font-weight:400;font-size:.75rem;border:1px solid var(--c-line);border-radius:999px;padding:.05rem .55rem;color:var(--c-muted);margin-left:.4rem;white-space:nowrap}
+.rec{color:var(--c-accent);border-color:var(--c-accent)}
+footer{padding-block:2rem;color:var(--c-muted);font-size:.85rem}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>교육 영상 챗봇 — 어떻게 구성할까</h1>
+    <p class="lead">교육 영상 시청자의 질문에 답하는 챗봇을 붙인다면, LangChain 까지 가지 않고 어디서 시작할 수 있을까. 노코드 · 검색만 · LLM 직접 호출 · RAG 프레임워크를 나란히 놓고, 두 AI(Claude · Codex)에게 따로 물어 비교했다.</p>
+    <p class="meta">2026-11-05 · 학습 노트</p>
+  </header>
+
+  <details class="sec" open>
+    <summary>1. 왜 — 무엇이 어려운가</summary>
+    <div class="body">
+      <ul>
+        <li>시청자 질문은 보통 메신저 상담 채널로 와서 사람이 답한다.</li>
+        <li>예상 질문 표는 어느 구성이든 필요하다 — 다만 지식을 늘리는 용도보다 <b>답을 평가하고 빠진 자료를 찾는 시험지</b>로 쓴다.</li>
+        <li>소프트웨어 매뉴얼은 대개 <b>이미지 위주</b>다. 글 자료만 넣으면 그림 속 내용은 못 읽는다. 비전 입력으로 읽힐 수는 있지만 정확도 검증이 필요하니, 조작법은 글로도 풀어 둔다.</li>
+        <li>노션 공개 페이지는 자동 수집이 막히는 경우가 있다 — 노션 「내보내기(Markdown)」 가 확실하다.</li>
+        <li>먼저 메뉴 하나(예: 「그리기」 15쪽 안팎)로 작게 데모를 하고 넓힌다.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="sec" open>
+    <summary>2. 무엇으로 — 자료 3종 + 답하는 엔진</summary>
+    <div class="body">
+      <p class="note">챗봇 = <b>자료</b> + <b>답하는 엔진</b>. 구성안끼리 다른 건 엔진뿐이다. 자료 준비는 공통이라 먼저 시작해도 버리는 일이 없다.</p>
+      <div class="tw"><table>
+        <tr><th>자료</th><th>어디서</th><th>데모 분량</th></tr>
+        <tr><td>매뉴얼 글</td><td>노션 내보내기(Markdown), 그림은 조작 순서 문장으로</td><td>메뉴 하나, 15쪽 안팎</td></tr>
+        <tr><td>영상 자막</td><td>이미 있는 자막 파일(VTT 등)</td><td>관련 영상 1~2개</td></tr>
+        <tr><td>예상 질문 표</td><td>엑셀: 질문 · 답 · 근거 쪽 · 영상 시각 · 언어</td><td>30~100문항</td></tr>
+      </table></div>
+    </div>
+  </details>
+
+  <details class="sec" open>
+    <summary>3. 어떻게 — Claude 안 넷</summary>
+    <div class="body">
+      <p class="note">가벼운 것 → 무거운 것 순. 기간 · 기준 수치는 실측이 아니라 어림 · 목표다.</p>
+
+      <div class="opt"><h3>A. 노코드 SaaS 위젯 <span class="tag">구현 거의 0</span></h3><ul>
+        <li>Chatbase · 상담 채널 AI · 노코드 챗봇 빌더에 자료를 올리고 시청 화면에 위젯 스크립트 한 줄.</li>
+        <li>장점: 바로 데모. 대화 기록 · 통계 화면이 따라온다.</li>
+        <li>단점: 회원 · 구매 여부 연동이 어렵다, 자료가 외부로 나간다, 월 요금, 「영상 몇 분으로 이동」 같은 화면 연동이 안 된다.</li></ul></div>
+
+      <div class="opt"><h3>B. FAQ 검색만 (AI 없음) <span class="tag">2~3일</span></h3><ul>
+        <li>관리 화면에 예상 질문 표를 두고, 질문 칸 → 이미 쓰는 검색 엔진(Meilisearch 등)으로 비슷한 질문 상위 3개를 보여 준다.</li>
+        <li>장점: 지어낸 답이 없다, 추가 비용 0, 검색 엔진의 언어별 색인을 그대로 쓴다(외국어 질문 → 한국어 자료는 따로 맞춰야 함).</li>
+        <li>단점: 표에 없는 질문은 못 받는다 — 「챗봇」 느낌은 약하다.</li></ul></div>
+
+      <div class="opt"><h3>C. 자료를 통째로 LLM 에 넣기 (RAG 없음) <span class="tag rec">Claude 추천 · 데모 1~2일</span></h3><ul>
+        <li>매뉴얼 글 + 자막 + 예상 질문 표를 <b>통째로 system 프롬프트</b>에 넣고(프롬프트 캐시) LLM 이 답한다. 벡터 DB · 임베딩 · LangChain 없음.</li>
+        <li>서버 코드는 LLM API HTTP 호출 하나 + 질문 받는 주소 하나 + 화면 질문 칸.</li>
+        <li>매뉴얼이 이미지 위주면 글 양이 적어, 매뉴얼 전체가 한 번에 들어갈 수도 있다(내보낸 뒤 재 본다).</li>
+        <li>「자료에 없으면 모른다고 · 상담 채널 안내」, 답마다 근거 쪽 · 영상 시각을 달게 한다. 질문 · 답 로그로 예상 질문 표를 키운다.</li>
+        <li>단점: 질문마다 API 요금(프롬프트 캐시가 적중하면 줄어든다). 자료가 수백 쪽을 넘으면 D 로 간다.</li></ul></div>
+
+      <div class="opt"><h3>D. LangChain RAG <span class="tag">1~2주</span></h3><ul>
+        <li>Python 서비스(FastAPI + LangChain/LlamaIndex) + 벡터 DB(Chroma · pgvector) + 임베딩. 기존 웹앱은 앞에서 넘겨주기만.</li>
+        <li>장점: 자료가 아주 많아져도 필요한 조각만 찾아 넣는다.</li>
+        <li>단점: 운영할 서비스 · 저장소가 늘고, 작은 자료에는 과하다. 답 품질은 결국 C 와 같은 자료에 달려 있다.</li></ul></div>
+    </div>
+  </details>
+
+  <details class="sec" open>
+    <summary>4. 어떻게 — Codex 안 넷</summary>
+    <div class="body">
+      <p class="note">같은 물음을 Claude 결론 없이 Codex 에 따로 물었다. 공수 · 요금은 Codex 추정(요금은 각 서비스 요금표 기준, 바뀔 수 있다).</p>
+      <div class="opt"><h3>E. Chatbase 위젯 <span class="tag rec">Codex 데모 추천 · 2~3일</span></h3><ul>
+        <li>지식원 + 삽입 위젯. 그림 속 조작법을 문장으로 옮겨 넣는다. 요금 Hobby $40/월부터(<a href="https://www.chatbase.co/pricing">요금표</a>).</li>
+        <li>위험: 자료 · 질문 외부 저장, 시청 권한 · 지금 보는 영상 맥락 반영이 어렵다.</li></ul></div>
+      <div class="opt"><h3>F. Dify Cloud 노코드 RAG <span class="tag">2~3일</span></h3><ul>
+        <li>지식베이스 · 챗봇 · 웹 삽입. 내 LLM API 키를 연결할 수 있다. Professional $59/월부터(<a href="https://dify.ai/pricing/dify-cloud">요금표</a>).</li>
+        <li>위험: 무료 플랜 문서 50개 제한, 외부 저장 문제는 같다.</li></ul></div>
+      <div class="opt"><h3>G. 기존 웹앱 + 검색 엔진 + LLM <span class="tag rec">Codex 제품 추천 · 4~7일</span></h3><ul>
+        <li>시청 권한 확인 → 검색 엔진으로 해당 과정 문서 찾기 → LLM 호출 → 출처 링크와 답. C 에 검색 단계를 끼운 모양.</li>
+        <li>예상 질문은 지식을 늘리는 용도가 아니라 <b>빠진 설명을 찾는 검증표</b>로 쓴다.</li></ul></div>
+      <div class="opt"><h3>H. LangChain · LlamaIndex <span class="tag">1~2주</span></h3><ul>
+        <li>Claude D 와 같다. 작은 데모에는 공수가 크다는 판단도 같다.</li></ul></div>
+    </div>
+  </details>
+
+  <details class="sec" open>
+    <summary>5. 의견 — 추천과 데모 순서</summary>
+    <div class="body">
+      <p><b>Claude: C</b> — 새 인프라 없이 하루 이틀에 「진짜로 답하는」 데모, 자료는 B · D 로 가도 그대로 쓴다.<br>
+      <b>Codex: 데모는 E(Chatbase), 제품은 G(기존 스택 + 검색 + LLM).</b><br>
+      둘 다 LangChain 은 지금 과하다고 봤다. 갈리는 곳은 데모를 외부 SaaS 로 할지, 처음부터 내 코드로 할지 하나다.</p>
+      <ol>
+        <li>데모할 메뉴의 노션 페이지를 Markdown 으로 내보낸다</li>
+        <li>기획 · 현업이 예상 질문 30~50개를 쓴다 — 질문 · 답 · 근거 쪽 · 영상 시각</li>
+        <li>고른 구성으로 질문 칸 + 답 API 를 만들고, 예상 질문으로 자동 채점한다</li>
+        <li>개발 서버에서 현업이 직접 물어본다</li>
+      </ol>
+      <div class="tw"><table>
+        <tr><th></th><th>Claude 기준</th><th>Codex 기준</th></tr>
+        <tr><td>예상 질문</td><td>50개 중 45개 이상 맞는 답 + 근거 쪽</td><td>30개 중 27개 이상 맞는 조작 순서 + 매뉴얼 링크</td></tr>
+        <tr><td>자료 밖 질문</td><td>10개 전부 「모른다 · 상담 안내」</td><td>10개 전부 「근거 없음」</td></tr>
+        <tr><td>다국어</td><td>영어 · 일본어로 같은 결과</td><td>지원 언어마다 1문항</td></tr>
+      </table></div>
+    </div>
+  </details>
+
+  <footer><a href="../">← 학습 목록</a></footer>
+</div>
+</body>
+</html>
