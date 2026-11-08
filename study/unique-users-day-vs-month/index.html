@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>고유 사용자 수 — 일별 합 · 월별 합 · 기간 고유가 다른 이유</title>
+<link rel="icon" href="data:,">
+<script>(()=>{try{const s=localStorage.getItem('scheme');if(s==='light'||s==='dark')document.documentElement.style.colorScheme=s;}catch{}})();</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@400;600;700&family=IBM+Plex+Sans+KR:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light dark;
+--bg:light-dark(#f5f2ea,#14161b);--sf:light-dark(#fdfbf6,#1b1e25);--tx:light-dark(#1b1d23,#e6e3dc);--mu:light-dark(#5d6270,#8b8f9a);
+--ac:light-dark(#8a6424,#c8a15a);--ln:light-dark(#dcd5c6,#2b2f3a);
+--cad:light-dark(#8a6424,#c8a15a);--nest:light-dark(#2d6c78,#6bb4c2);--none:light-dark(#ece7da,#232731);--on:light-dark(#fff,#14161b)}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;color:var(--tx);font:300 16px/1.75 "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;overflow-wrap:anywhere}
+h1,h2,h3{font-family:Hahmlet,"Noto Serif KR",serif;font-weight:600;line-height:1.35;margin:0}
+main{max-width:1180px;margin:0 auto;padding:40px 24px 80px}
+.top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.sw{display:flex;border:1px solid var(--ln);border-radius:8px;overflow:hidden;flex:none}
+.sw button{font:400 14px "IBM Plex Sans KR",sans-serif;background:var(--sf);color:var(--mu);border:0;padding:6px 14px;cursor:pointer}
+.sw button[aria-pressed=true]{background:var(--ac);color:var(--on)}
+h1{font-size:clamp(24px,3.2vw,36px)}
+.lead{margin:20px 0 28px;border-left:3px solid var(--ac);padding:4px 0 4px 18px;font-size:clamp(17px,2vw,21px);line-height:1.7}
+.lead b{font-weight:600;color:var(--ac)}
+.meta{color:var(--mu);font-size:13px;margin:0 0 24px}
+details{border:1px solid var(--ln);background:var(--sf);border-radius:10px;margin:12px 0}
+summary{cursor:pointer;padding:16px 20px;font:600 18px Hahmlet,serif;list-style:none;display:flex;gap:12px;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+";color:var(--ac);font-weight:700;width:14px}
+details[open]>summary::before{content:"−"}
+details>div.body{padding:4px 20px 22px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.two>div{min-width:0}
+h3{font-size:16px;margin:18px 0 8px}
+svg{width:100%;height:auto;display:block}
+.lb{fill:var(--tx);font:400 13px "IBM Plex Sans KR",sans-serif}.nv{fill:var(--tx);font:600 14px "IBM Plex Sans KR",sans-serif}
+.bar{fill:var(--mu);opacity:.45}.bar.hl{fill:var(--ac);opacity:1}
+table.t{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0}
+.t th,.t td{border-bottom:1px solid var(--ln);padding:8px 10px;text-align:right}
+.t th:first-child,.t td:first-child{text-align:left}
+.t th{color:var(--mu);font-weight:400}
+.tw{overflow-x:auto}
+.note{color:var(--mu);font-size:14px;margin:8px 0}
+.mems{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.mem{border:1px solid var(--ln);border-radius:10px;padding:16px;min-width:0;background:var(--bg)}
+.mem h3{margin:0 0 10px}.tag{font:300 12px "IBM Plex Sans KR";color:var(--mu);border:1px solid var(--ln);border-radius:20px;padding:2px 10px;margin-left:6px;white-space:nowrap}
+.cals{display:grid;gap:12px}
+.ct{font-size:13px;color:var(--mu);margin-bottom:4px}
+.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cg i{font-style:normal;text-align:center;font-size:11px;line-height:22px;border-radius:4px;color:var(--mu);background:var(--none)}
+.cg i.dw{background:none;font-size:10px;line-height:14px}.cg i.e{background:none}
+i.c{background:var(--cad)!important;color:var(--on)!important}i.n{background:var(--nest)!important;color:var(--on)!important}
+i.b{background:linear-gradient(135deg,var(--cad) 50%,var(--nest) 50%)!important;color:var(--on)!important;font-weight:600}
+.leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--mu);margin:10px 0 4px}
+.leg i{display:inline-block;width:14px;height:14px;border-radius:3px;font-style:normal;vertical-align:-2px;background:var(--none)}
+.chain{list-style:none;margin:8px 0;padding:0;display:grid;gap:6px}
+.chain li{display:flex;justify-content:space-between;gap:12px;padding:8px 14px;border-radius:8px;border:1px solid var(--ln)}
+.chain li span{font:600 18px Hahmlet,serif}.chain em{font-style:normal;color:var(--mu);font-size:14px;text-align:right}
+.chain .eq{background:var(--bg)}.chain .eq span{color:var(--ac)}
+.chain .mi{border-style:dashed;margin-left:20px}.chain .mi span{color:var(--mu)}
+code{font:400 13px ui-monospace,Menlo,monospace;background:var(--none);padding:1px 6px;border-radius:4px}
+ul{margin:8px 0;padding-left:20px}
+pre{overflow-x:auto;max-width:100%;background:var(--none);padding:12px;border-radius:8px}pre code{padding:0;background:none}
+@media(max-width:900px){.two,.mems{grid-template-columns:1fr}main{padding:24px 16px 60px}}
+</style>
+</head>
+<body>
+<main>
+<div class="top"><h1>고유 사용자 수 — 일별 합 · 월별 합 · 기간 고유가 다른 이유</h1>
+<div class="sw" role="group" aria-label="화면 모드"><button type="button" data-s="light" aria-pressed="false">화이트</button><button type="button" data-s="dark" aria-pressed="false">다크</button></div></div>
+<p class="lead">셋은 모두 「고유 사용자 수」지만 <b>고유를 세는 칸의 크기</b>가 다르다 — 일별은 하루, 월별은 한 달, 기간 고유는 기간 전체. 한 사람이 여러 날 · 여러 달 오면 칸이 작을수록 여러 번 셈이 된다.<br>
+아래 예시(3명, 9 ~ 10월)는 앱별 일별 합 <b>11</b> → 일별 합 <b>10</b> → 월별 합 <b>5</b> → 기간 고유 <b>3</b> 이다.</p>
+<p class="meta">숫자 · 회원 · 날짜는 설명을 위해 지어낸 예시다. 앱 A · B 는 같은 계정으로 로그인하는 서로 다른 프로그램 둘이다.</p>
+
+<details><summary>1. 회원 3명의 접속 달력</summary><div class="body">
+<p class="note">칸 하나가 하루. 칠해진 날 수가 「일별」, 칠해진 달 수가 「월별」, 한 번이라도 있으면 1 이 「기간 고유」다.</p>
+<div class="leg"><span><i class="c">&nbsp;</i> 앱 A 만</span><span><i class="n">&nbsp;</i> 앱 B 만</span><span><i class="b">&nbsp;</i> 같은 날 둘 다</span><span><i class="x">&nbsp;</i> 접속 없음</span></div>
+<div class="mems"><article class="mem"><h3>회원 가 <span class="tag">앱 A 만 씀</span></h3><div class="cals"><div class="cal"><div class="ct">9월</div><div class="cg"><i class="dw">일</i><i class="dw">월</i><i class="dw">화</i><i class="dw">수</i><i class="dw">목</i><i class="dw">금</i><i class="dw">토</i><i class="e"></i><i class="e"></i><i class="x">1</i><i class="x">2</i><i class="c">3</i><i class="x">4</i><i class="x">5</i><i class="x">6</i><i class="x">7</i><i class="x">8</i><i class="x">9</i><i class="c">10</i><i class="x">11</i><i class="x">12</i><i class="x">13</i><i class="x">14</i><i class="x">15</i><i class="x">16</i><i class="c">17</i><i class="x">18</i><i class="x">19</i><i class="x">20</i><i class="x">21</i><i class="x">22</i><i class="x">23</i><i class="x">24</i><i class="x">25</i><i class="x">26</i><i class="x">27</i><i class="x">28</i><i class="x">29</i><i class="x">30</i></div></div><div class="cal"><div class="ct">10월</div><div class="cg"><i class="dw">일</i><i class="dw">월</i><i class="dw">화</i><i class="dw">수</i><i class="dw">목</i><i class="dw">금</i><i class="dw">토</i><i class="e"></i><i class="e"></i><i class="e"></i><i class="e"></i><i class="c">1</i><i class="x">2</i><i class="x">3</i><i class="x">4</i><i class="x">5</i><i class="x">6</i><i class="x">7</i><i class="c">8</i><i class="x">9</i><i class="x">10</i><i class="x">11</i><i class="x">12</i><i class="x">13</i><i class="x">14</i><i class="x">15</i><i class="x">16</i><i class="x">17</i><i class="x">18</i><i class="x">19</i><i class="x">20</i><i class="x">21</i><i class="x">22</i><i class="x">23</i><i class="x">24</i><i class="x">25</i><i class="x">26</i><i class="x">27</i><i class="x">28</i><i class="x">29</i><i class="x">30</i><i class="x">31</i></div></div></div><table class="t"><thead><tr><th>이 회원을 이렇게 세면</th><th>9 ~ 10월</th></tr></thead><tbody><tr><td>앱별 일별 합</td><td>5번</td></tr><tr><td>일별 합 (전체)</td><td><b>5</b>번 (접속한 날 수)</td></tr><tr><td>월별 합</td><td><b>2</b>번 (접속한 달 수)</td></tr><tr><td>기간 고유</td><td><b>1</b>번</td></tr></tbody></table></article><article class="mem"><h3>회원 나 <span class="tag">앱 A · B 둘 다 씀</span></h3><div class="cals"><div class="cal"><div class="ct">9월</div><div class="cg"><i class="dw">일</i><i class="dw">월</i><i class="dw">화</i><i class="dw">수</i><i class="dw">목</i><i class="dw">금</i><i class="dw">토</i><i class="e"></i><i class="e"></i><i class="x">1</i><i class="x">2</i><i class="x">3</i><i class="x">4</i><i class="b">5</i><i class="x">6</i><i class="x">7</i><i class="x">8</i><i class="x">9</i><i class="x">10</i><i class="x">11</i><i class="x">12</i><i class="x">13</i><i class="x">14</i><i class="x">15</i><i class="x">16</i><i class="x">17</i><i class="x">18</i><i class="x">19</i><i class="x">20</i><i class="x">21</i><i class="x">22</i><i class="x">23</i><i class="x">24</i><i class="x">25</i><i class="x">26</i><i class="x">27</i><i class="x">28</i><i class="x">29</i><i class="x">30</i></div></div><div class="cal"><div class="ct">10월</div><div class="cg"><i class="dw">일</i><i class="dw">월</i><i class="dw">화</i><i class="dw">수</i><i class="dw">목</i><i class="dw">금</i><i class="dw">토</i><i class="e"></i><i class="e"></i><i class="e"></i><i class="e"></i><i class="x">1</i><i class="c">2</i><i class="x">3</i><i class="x">4</i><i class="x">5</i><i class="x">6</i><i class="x">7</i><i class="x">8</i><i class="n">9</i><i class="x">10</i><i class="x">11</i><i class="x">12</i><i class="x">13</i><i class="x">14</i><i class="x">15</i><i class="x">16</i><i class="x">17</i><i class="x">18</i><i class="x">19</i><i class="x">20</i><i class="x">21</i><i class="x">22</i><i class="x">23</i><i class="x">24</i><i class="x">25</i><i class="x">26</i><i class="x">27</i><i class="x">28</i><i class="x">29</i><i class="x">30</i><i class="x">31</i></div></div></div><table class="t"><thead><tr><th>이 회원을 이렇게 세면</th><th>9 ~ 10월</th></tr></thead><tbody><tr><td>앱별 일별 합</td><td>4번</td></tr><tr><td>일별 합 (전체)</td><td><b>3</b>번 (접속한 날 수)</td></tr><tr><td>월별 합</td><td><b>2</b>번 (접속한 달 수)</td></tr><tr><td>기간 고유</td><td><b>1</b>번</td></tr></tbody></table></article><article class="mem"><h3>회원 다 <span class="tag">앱 B 만 씀</span></h3><div class="cals"><div class="cal"><div class="ct">9월</div><div class="cg"><i class="dw">일</i><i class="dw">월</i><i class="dw">화</i><i class="dw">수</i><i class="dw">목</i><i class="dw">금</i><i class="dw">토</i><i class="e"></i><i class="e"></i><i class="x">1</i><i class="x">2</i><i class="x">3</i><i class="x">4</i><i class="x">5</i><i class="x">6</i><i class="x">7</i><i class="x">8</i><i class="x">9</i><i class="x">10</i><i class="x">11</i><i class="x">12</i><i class="x">13</i><i class="x">14</i><i class="x">15</i><i class="x">16</i><i class="x">17</i><i class="x">18</i><i class="x">19</i><i class="x">20</i><i class="x">21</i><i class="x">22</i><i class="x">23</i><i class="x">24</i><i class="x">25</i><i class="x">26</i><i class="x">27</i><i class="x">28</i><i class="x">29</i><i class="x">30</i></div></div><div class="cal"><div class="ct">10월</div><div class="cg"><i class="dw">일</i><i class="dw">월</i><i class="dw">화</i><i class="dw">수</i><i class="dw">목</i><i class="dw">금</i><i class="dw">토</i><i class="e"></i><i class="e"></i><i class="e"></i><i class="e"></i><i class="x">1</i><i class="x">2</i><i class="x">3</i><i class="x">4</i><i class="x">5</i><i class="x">6</i><i class="x">7</i><i class="x">8</i><i class="x">9</i><i class="x">10</i><i class="x">11</i><i class="x">12</i><i class="x">13</i><i class="x">14</i><i class="x">15</i><i class="x">16</i><i class="x">17</i><i class="x">18</i><i class="x">19</i><i class="n">20</i><i class="n">21</i><i class="x">22</i><i class="x">23</i><i class="x">24</i><i class="x">25</i><i class="x">26</i><i class="x">27</i><i class="x">28</i><i class="x">29</i><i class="x">30</i><i class="x">31</i></div></div></div><table class="t"><thead><tr><th>이 회원을 이렇게 세면</th><th>9 ~ 10월</th></tr></thead><tbody><tr><td>앱별 일별 합</td><td>2번</td></tr><tr><td>일별 합 (전체)</td><td><b>2</b>번 (접속한 날 수)</td></tr><tr><td>월별 합</td><td><b>1</b>번 (접속한 달 수)</td></tr><tr><td>기간 고유</td><td><b>1</b>번</td></tr></tbody></table></article></div>
+</div></details>
+
+<details><summary>2. 숫자 분해 — 무엇이 겹쳐 센 것인가</summary><div class="body">
+<ol class="chain"><li class="eq"><span>11</span><em>앱별 일별 합 (A 일별 + B 일별)</em></li><li class="mi"><span>− 1</span><em>같은 날 A · B 둘 다 (나 9/5)</em></li><li class="eq"><span>10</span><em>일별 합 (전체)</em></li><li class="mi"><span>− 5</span><em>같은 달 안에서 여러 날</em></li><li class="eq"><span>5</span><em>월별 합 = 9월 2명 + 10월 3명</em></li><li class="mi"><span>− 2</span><em>두 달 모두 접속 (가 · 나)</em></li><li class="eq"><span>3</span><em>기간 고유 (전체)</em></li></ol>
+<p class="note">한 달만 고르면 월별 합과 기간 고유는 같다. 달이 둘 이상이면 여러 달에 온 사람만큼 갈라진다.</p>
+</div></details>
+
+<details><summary>3. 앱 A + 앱 B 가 「전체」와 안 맞는 이유</summary><div class="body">
+<p>두 앱을 다 쓰는 사람은 A 칸에도 B 칸에도 들어가지만 「전체」에서는 한 번이다. 그래서 A + B 단순 덧셈은 전체보다 크다. 이 겹침은 세는 칸의 크기마다 따로 생긴다.</p>
+<ul><li>일별 — 같은 날 둘 다 쓴 날만 겹친다 (예시 1건)</li><li>월별 — 같은 달 안에 둘 다 쓰면 겹친다 (나 10월: 2일은 A, 9일은 B → 1건)</li><li>기간 고유 — 기간 안에 둘 다 쓰면 겹친다 (나 1명)</li></ul>
+<p class="note">칸이 클수록 두 앱을 쓴 사람을 한 번에 묶는다.</p>
+</div></details>
+
+<details><summary>4. 세는 규칙</summary><div class="body">
+<ul><li>먼저 (칸 시작일, 사용자) 쌍으로 중복을 없앤다 — 칸은 하루 · 한 달 · 기간 전체 중 하나.</li><li>남은 쌍의 개수를 더하면 그 칸 크기의 「합」이 된다.</li><li>「전체」는 앱을 가리지 않고 사용자 하나로 묶은 뒤 센다. 앱별로 센 값을 나중에 더하면 그만큼 부풀려진다.</li><li>날짜 경계는 보는 사람의 시간대로 자른다 — UTC 로 자르면 새벽 접속이 전날로 간다.</li></ul>
+<pre><code>-- 일별 합 (전체)
+SELECT COUNT(*) FROM (
+  SELECT DATE(login_at) AS d, user_id
+  FROM login_log
+  WHERE login_at &gt;= :from AND login_at &lt; :to
+  GROUP BY d, user_id
+) t;
+-- 월별 합: DATE(login_at) 대신 DATE_FORMAT(login_at, '%Y-%m')
+-- 기간 고유: SELECT COUNT(DISTINCT user_id) ...</code></pre>
+</div></details>
+</main>
+<script>
+(()=>{const r=document.documentElement,bs=document.querySelectorAll('.sw button');
+function cur(){return r.style.colorScheme||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}
+function mark(){const c=cur();bs.forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===c))}
+bs.forEach(b=>b.onclick=()=>{r.style.colorScheme=b.dataset.s;try{localStorage.setItem('scheme',b.dataset.s)}catch{};mark()});mark()})();
+</script>
+</body></html>
